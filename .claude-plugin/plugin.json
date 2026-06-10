@@ -2,9 +2,12 @@
   "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
   "name": "iskwyuki-claude-plugins",
   "description": "iskwyuki 個人用 Claude Code アセットの配信基盤",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": {
     "name": "iskwyuki"
   },
-  "homepage": "https://github.com/iskwyuki/claude-code-plugins"
+  "homepage": "https://github.com/iskwyuki/iskwyuki-claude-plugins",
+  "dependencies": [
+    "claude-code-harness"
+  ]
 }

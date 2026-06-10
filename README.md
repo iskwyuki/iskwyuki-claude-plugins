@@ -13,13 +13,15 @@ iskwyuki 個人用 Claude Code アセットの配信基盤。
 各プロジェクトのルートで以下を 1 回だけ実行:
 
 ```
-/plugin marketplace add iskwyuki/claude-code-plugins
+/plugin marketplace add iskwyuki/iskwyuki-claude-plugins
 /plugin install iskwyuki-claude-plugins@iskwyuki-claude-plugins
 /iskwyuki-claude-plugins:bootstrap
 git add .claude/ && git commit -m "chore: iskwyuki-claude-plugins 初回同期"
 ```
 
 bootstrap 完了後、プロジェクトの `.claude/` 配下に `pull-assets` / `push-asset` を含む全 asset が展開され、以降は短縮名で運用できます。
+
+> 依存プラグインとして [claude-code-harness](https://github.com/Chachamaru127/claude-code-harness)（Plan→Work→Review の自律開発サイクル）が同梱されており、本プラグインのインストール時に自動でインストール・有効化されます。
 
 ## リポジトリ構造
 

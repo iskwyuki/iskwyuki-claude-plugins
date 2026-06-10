@@ -38,13 +38,13 @@ test -e .claude/<type>/<name> || echo "MISSING"
 
 優先順位:
 1. 環境変数 `$CLAUDE_PLUGINS_REPO`
-2. `~/dev/claude-code-plugins`
-3. `~/dev/claude-code-template`（リネーム前の後方互換）
+2. `~/dev/iskwyuki-claude-plugins`
+3. `~/dev/claude-code-plugins`（リネーム前の後方互換）
 
 最初に存在するものを採用。見つからなければ以下を案内して終了:
 
 ```
-git clone https://github.com/iskwyuki/claude-code-plugins.git ~/dev/claude-code-plugins
+git clone https://github.com/iskwyuki/iskwyuki-claude-plugins.git ~/dev/iskwyuki-claude-plugins
 ```
 
 ### Step 4: 差分表示
