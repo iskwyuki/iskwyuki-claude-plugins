@@ -21,6 +21,17 @@ bootstrap が終わると、プロジェクトの `.claude/` に `pull-assets`, 
 
 本プラグインは `plugin.json` の `dependencies` で [claude-code-harness](https://github.com/Chachamaru127/claude-code-harness) を宣言しており、インストール時に自動でインストール・有効化されます（Claude Code v2.1.143+）。マーケットプレイス定義に外部ソースとして掲載済みのため、追加の marketplace 登録は不要です。
 
+掲載はバージョンピンなし（本家デフォルトブランチ追従）です。問題が起きた場合の巻き戻しは `/update-plugins` の手順（`ref` / `sha` ピン留め）を参照してください。
+
+## プラグイン更新モニタ
+
+同梱の SessionStart hook（`hooks/check-plugin-updates.sh`）が、セッション開始時にインストール済み全プラグインの更新有無をチェックし、更新があれば端末通知します。
+
+- チェックは TTL でゲートされます（既定 12 時間、環境変数 `PLUGIN_UPDATE_CHECK_TTL_HOURS` で変更可）
+- `gh` / `python3` が無い環境やネットワーク失敗時は無音でスキップし、セッション開始を妨げません
+- `sha` ピン留めされた外部ソースは「意図的な固定」とみなしチェック対象外です
+- 更新の適用・巻き戻しは `/update-plugins` skill が担当します（適用は `claude plugin update <plugin>`、反映には再起動が必要）
+
 ## 複数環境への自動展開（settings.json）
 
 bootstrap はプロジェクトの `.claude/settings.json` に以下のキーをマージします。これをコミットしておくと、リポジトリを開いた別環境でも marketplace 追加とプラグイン有効化がプロンプト一発で再現されます。
