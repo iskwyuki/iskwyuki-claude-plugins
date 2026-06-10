@@ -10,10 +10,11 @@ description: >
 
 ## 使い方
 
-- `/code-review` — Full レベル（デフォルト、6エージェント並列）
-- `/code-review standard` — Standard レベル（3エージェント）
+- `/code-review` — Full レベル（デフォルト、7エージェント並列）
+- `/code-review standard` — Standard レベル（4エージェント）
 - `/code-review lite` — Lite レベル（1エージェント）
 - `/code-review HEAD~3` — コミット範囲指定（レベルは Full）
+- `/code-review pr 123` — PR の差分をレビュー（`gh pr diff 123` で取得）
 - `/code-review standard HEAD~3` — レベル + 範囲の組み合わせ
 
 ## レベル構成
@@ -21,8 +22,10 @@ description: >
 | レベル | エージェント | 用途 |
 |------|---------|------|
 | **Lite** | code-reviewer | typo修正、軽微な変更 |
-| **Standard** | code-reviewer + design-checker + requirements-checker | 通常の開発 |
-| **Full** | 全6エージェント並列 | コミット前の本格レビュー（デフォルト） |
+| **Standard** | code-reviewer + design-checker + requirements-checker + rules-checker | 通常の開発 |
+| **Full** | 全7エージェント並列 | コミット前の本格レビュー（デフォルト） |
+
+> **設計原則**: 各レビューエージェントは「全件報告（recall 重視）」、その後の検証パス（Step 5）が「裏取り（precision 回復）」を担う。**全件報告と検証パスは必ずセットで運用すること**。発見段階で黙って捨てられた真の指摘は下流で回収できないが、誤指摘は検証パスで棄却できる。
 
 ## ワークフロー
 
@@ -34,8 +37,8 @@ description: >
 
 ### Step 2: 変更差分の収集
 
-1. `git diff HEAD`（または指定範囲）で差分を取得
-2. `git status --porcelain` で未追跡ファイルを検出、`Read` で読み込む
+1. `git diff HEAD`（または指定範囲）で差分を取得。PR 指定時は `gh pr diff <番号>` で取得
+2. `git status --porcelain` で未追跡ファイルを検出、`Read` で読み込む（PR 指定時はスキップ）
 3. 以下は除外:
    - `pnpm-lock.yaml`, `package-lock.json` 等のロックファイル
    - `.png`, `.jpg`, `.ico` 等のバイナリファイル
@@ -135,6 +138,17 @@ description: >
 - 同じことを別の方法で2回書いていないか
 ```
 
+**7. rules-checker（Standard以上）**
+```
+役割: プロジェクト規約（.claude/rules/）との機械的照合
+コンテキスト: diff + .claude/rules/ 配下の全ルールファイル
+観点:
+- 各ルールファイルのチェック項目・禁止事項と diff を1項目ずつ照合する
+- ルールに「過去の不具合」事例が記載されている場合、同型のコードが再導入されていないか確認する
+- 違反は該当ルールファイル名を添えて報告する
+※ .claude/rules/ が存在しない、または該当 path のルールがない場合はスキップ
+```
+
 <!-- ====================================================================
   プロジェクト固有のカスタマイズガイド
 
@@ -171,15 +185,18 @@ description: >
 各エージェントのプロンプト末尾に以下を付与する:
 
 ```
+## 報告方針（最重要）
+あなたの役割は網羅（カバレッジ）であり、フィルタリングではない。確信が持てない指摘・軽微に見える指摘も省略せず報告すること。誤指摘は下流の検証パスが棄却するが、あなたが黙って落とした指摘は誰にも回収できない。各指摘に confidence（high / medium / low）を付与すること。
+
 ## 出力フォーマット
 以下の形式で結果を報告してください。該当なしのセクションは省略してください。
 
 ### Critical（必ず修正すべき）
-- `file:line` — 指摘内容
+- `file:line` — 指摘内容（confidence: high|medium|low）
   → 修正案: ...
 
 ### Warning（推奨）
-- `file:line` — 指摘内容
+- `file:line` — 指摘内容（confidence: high|medium|low）
   → 修正案: ...
 
 ### Info（参考）
@@ -191,7 +208,25 @@ description: >
 指摘がない場合は「指摘事項なし」とだけ報告してください。
 ```
 
-### Step 5: 結果の統合
+### Step 5: 検証パス（Critical / Warning の裏取り）
+
+統合の前に、各エージェントから上がった Critical / Warning を検証する。**全件報告方針と検証パスは必ずセットで運用する**（検証パスを省略して全件報告だけ行うと誤指摘がそのままユーザーに届く）。
+
+1. Critical / Warning の指摘ごとに検証エージェントを並列起動する（新しいコンテキスト、リードオンリー）。指摘が多い場合は1エージェントに複数指摘を割り当ててよい（指摘ごとに独立判断するよう指示する）
+2. 各検証エージェントへの指示:
+   ```
+   以下のレビュー指摘を「反証」せよ。擁護ではなく反証を試みること。
+   実際のコード・型定義・呼び出し元を Read / Grep で確認し、指摘が現行コードに当てはまるかを判定し、verdict を返せ:
+   - confirmed: 指摘は正しい（根拠の行番号を添える）
+   - refuted: 誤指摘（反証の根拠を必ず添える）
+   - uncertain: 判断不能（何が分かれば判断できるかを添える）
+   ```
+3. verdict の処理:
+   - **refuted** → 統合レポートから除外し、件数のみ「検証で棄却: N件」と記載
+   - **uncertain** → 残すが Warning 以下に降格
+   - Info / Good は検証パスの対象外
+
+### Step 6: 結果の統合
 
 全エージェントの結果を受け取り、以下の統合レポートを生成する:
 
@@ -217,26 +252,26 @@ description: >
 ...
 
 ### サマリー
-Critical: N件 / Warning: N件 / Info: N件
+Critical: N件 / Warning: N件 / Info: N件 / 検証で棄却: N件
 ```
 
 **統合ルール:**
-- 各指摘の先頭にエージェント名をタグとして付与する
+- 各指摘の先頭にエージェント名をタグとして付与し、confidence と検証 verdict を保持する
 - 複数エージェントが同じ箇所を指摘した場合は1つにマージし、検出元を併記
 - Critical > Warning > Info の順でソート
 - 同一重要度内ではファイルパス順でソート
 - Good は全エージェントの Good をまとめて記載
 
-### Step 6: Critical の自動修正提案
+### Step 7: Critical の自動修正提案
 
-Critical が 1件以上ある場合、`AskUserQuestion` で確認する:
+検証済み（confirmed）の Critical が 1件以上ある場合、`AskUserQuestion` で確認する:
 
 > Critical が N 件あります。自動修正しますか？
 > - **修正する** → Critical を修正し、修正後に **再レビュー（Lite レベル）** を実行
 > - **このまま** → レポート表示のみで終了
 
 **修正する場合:**
-1. Critical の各項目を Edit ツールで修正
+1. 検証済み Critical の各項目を Edit ツールで修正
 2. 修正完了後、Lite レベルで再レビュー（無限ループ防止のため Lite 固定）
 3. Critical が 0 件になったらレビュー完了
 
