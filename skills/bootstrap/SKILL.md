@@ -82,12 +82,13 @@ rsync -av "$PLUGIN_ROOT/assets/<type>/" ./.claude/<type>/
   },
   "enabledPlugins": {
     "iskwyuki-claude-plugins@iskwyuki-claude-plugins": true,
-    "claude-code-harness@iskwyuki-claude-plugins": true
+    "claude-code-harness@iskwyuki-claude-plugins": true,
+    "mattpocock-skills@iskwyuki-claude-plugins": true
   }
 }
 ```
 
-これにより、このリポジトリを開いた別環境でも marketplace 追加とプラグイン有効化（依存の claude-code-harness を含む）がプロンプト一発で再現される。
+これにより、このリポジトリを開いた別環境でも marketplace 追加とプラグイン有効化（依存の claude-code-harness / mattpocock-skills を含む）がプロンプト一発で再現される。
 
 ### Step 7: 完了報告
 

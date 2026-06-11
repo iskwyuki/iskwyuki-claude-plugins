@@ -21,7 +21,7 @@ git add .claude/ && git commit -m "chore: iskwyuki-claude-plugins 初回同期"
 
 bootstrap 完了後、プロジェクトの `.claude/` 配下に `pull-assets` / `push-asset` を含む全 asset が展開され、以降は短縮名で運用できます。
 
-> 依存プラグインとして [claude-code-harness](https://github.com/Chachamaru127/claude-code-harness)（Plan→Work→Review の自律開発サイクル）が同梱されており、本プラグインのインストール時に自動でインストール・有効化されます。
+> 依存プラグインとして [claude-code-harness](https://github.com/Chachamaru127/claude-code-harness)（Plan→Work→Review の自律開発サイクル）と [mattpocock-skills](https://github.com/mattpocock/skills)（`/grill-me` / `/grill-with-docs` などの尋問系 skills、MIT）が同梱されており、本プラグインのインストール時に自動でインストール・有効化されます。
 
 ### プラグイン更新モニタ
 

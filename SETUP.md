@@ -17,11 +17,14 @@ git add .claude/ && git commit -m "chore: iskwyuki-claude-plugins 初回同期"
 
 bootstrap が終わると、プロジェクトの `.claude/` に `pull-assets`, `push-asset` を含む全 asset が展開され、以降は短縮名で運用できます。
 
-## 同梱プラグイン（claude-code-harness）
+## 同梱プラグイン（claude-code-harness / mattpocock-skills）
 
-本プラグインは `plugin.json` の `dependencies` で [claude-code-harness](https://github.com/Chachamaru127/claude-code-harness) を宣言しており、インストール時に自動でインストール・有効化されます（Claude Code v2.1.143+）。マーケットプレイス定義に外部ソースとして掲載済みのため、追加の marketplace 登録は不要です。
+本プラグインは `plugin.json` の `dependencies` で以下の外部プラグインを宣言しており、インストール時に自動でインストール・有効化されます（Claude Code v2.1.143+）。マーケットプレイス定義に外部ソースとして掲載済みのため、追加の marketplace 登録は不要です。
 
-掲載はバージョンピンなし（本家デフォルトブランチ追従）です。問題が起きた場合の巻き戻しは `/update-plugins` の手順（`ref` / `sha` ピン留め）を参照してください。
+- [claude-code-harness](https://github.com/Chachamaru127/claude-code-harness) — Plan→Work→Review の自律開発サイクル
+- [mattpocock-skills](https://github.com/mattpocock/skills) — `/mattpocock-skills:grill-me`（計画を 1 問ずつ尋問して決定木を解消）、`/mattpocock-skills:grill-with-docs`（既存ドキュメントと突き合わせて尋問＋ドキュメント更新）を含む Matt Pocock 氏の skills 集（MIT）
+
+掲載はいずれもバージョンピンなし（本家デフォルトブランチ追従）です。問題が起きた場合の巻き戻しは `/update-plugins` の手順（`ref` / `sha` ピン留め）を参照してください。
 
 ## プラグイン更新モニタ
 
@@ -48,7 +51,8 @@ bootstrap はプロジェクトの `.claude/settings.json` に以下のキーを
   },
   "enabledPlugins": {
     "iskwyuki-claude-plugins@iskwyuki-claude-plugins": true,
-    "claude-code-harness@iskwyuki-claude-plugins": true
+    "claude-code-harness@iskwyuki-claude-plugins": true,
+    "mattpocock-skills@iskwyuki-claude-plugins": true
   }
 }
 ```
