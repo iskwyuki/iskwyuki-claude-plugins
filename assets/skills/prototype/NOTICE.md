@@ -2,7 +2,7 @@
 
 この skill は [mattpocock/skills](https://github.com/mattpocock/skills) からの選別ミラーです（無改変・verbatim）。
 
-- 上流パス: `skills/engineering/grill-with-docs/`（SKILL.md / CONTEXT-FORMAT.md / ADR-FORMAT.md）
+- 上流パス: `skills/engineering/prototype/`（SKILL.md / LOGIC.md / UI.md）
 - 同期: `.github/workflows/sync-upstream-skills.yml` が毎日上流をチェックし、差分があれば同期 PR を自動作成（対象は `.github/upstream-skills.manifest` で管理）
 - 本ファイル（NOTICE.md）は同期対象外のローカル追加ファイル
 
