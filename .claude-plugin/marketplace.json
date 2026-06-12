@@ -22,16 +22,6 @@
       },
       "category": "development",
       "homepage": "https://github.com/Chachamaru127/claude-code-harness"
-    },
-    {
-      "name": "mattpocock-skills",
-      "description": "grill-me / grill-with-docs を含む Matt Pocock 氏の skills 集（mattpocock/skills を外部参照で掲載、MIT）",
-      "source": {
-        "source": "github",
-        "repo": "mattpocock/skills"
-      },
-      "category": "development",
-      "homepage": "https://github.com/mattpocock/skills"
     }
   ]
 }

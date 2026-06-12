@@ -1,8 +1,7 @@
 {
   "enabledPlugins": {
     "iskwyuki-claude-plugins@iskwyuki-claude-plugins": true,
-    "claude-code-harness@iskwyuki-claude-plugins": true,
-    "mattpocock-skills@iskwyuki-claude-plugins": true
+    "claude-code-harness@iskwyuki-claude-plugins": true
   },
   "extraKnownMarketplaces": {
     "iskwyuki-claude-plugins": {
