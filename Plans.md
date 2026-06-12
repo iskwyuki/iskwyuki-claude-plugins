@@ -4,6 +4,8 @@
 
 **目的**: Fable 5 がサブスク枠で使えるうちに、開発品質をモデル非依存のハーネス資産（プラグイン・rules・ゲート・物差し）へ焼き込む。
 
+**期限**: Fable 5 のサブスク枠は **2026-06-22 まで**。全 12 タスクをこの期限までに消化する方針（2026-06-12 の grill セッションで確定）。外部レイテンシのある 1.4 の SSO 認可申請は最優先で先行着手する。
+
 **前提（完了済み）**: 配布基盤 v0.4.2（harness 同梱・settings 自動展開・更新モニタ全状態出力）/ harvest-lessons（サニタイズ必須）/ code-review 全件報告＋検証パス＋rules-checker / pr-review-loop / portfolio での実証一式（pre-commit ゲート・rules 3点・breezing 1サイクル・PR #26 マージ）。
 
 **推奨着手順**: 1.1 → 2.1 → 1.2 → 2.2 → 2.3 → 1.3 / 1.5 → Phase 3。Phase 1 は Fable 5 の残期間に直接依存するため優先。
@@ -16,19 +18,19 @@
 
 | Task | 内容 | DoD | Depends | Status |
 |------|------|-----|---------|--------|
-| 1.1 | 品質の物差し作り（基準レビューセット）。portfolio の修正履歴から「バグ修正コミット直前」の diff を 5〜10 件選定して既知バグの正解リストを作り、Fable 5 の /code-review 結果とともに portfolio の docs/quality-baseline/ に保存 [tdd:skip:docs-only] | 5 件以上のケース＋正解リスト＋Fable 5 レビュー結果が保存され、後日「別モデル＋資産」で同一セットを流して検出率比較できる再実行手順が README にある | - | cc:TODO |
-| 1.2 | 既存 skills の Fable 5 推敲。commit / pr / issue / test / todo / review / pull-assets / push-asset の各 SKILL.md を「原則＋チェックリスト＋過去事例」形式へ統一し、旧モデル向けの細かすぎる手順を削除（公式ガイドの推奨。code-review / reviewer は対応済み） [tdd:skip:docs-only] | 全 8 skill の見直し PR がマージされ version bump 済み。削った指示と残した指示の判断理由が PR 本文にある | - | cc:TODO |
-| 1.3 | harvest-lessons の初回収穫（自リポジトリ）。Antenna / tech-blog など portfolio 以外で実走し、頻出修正パターンを検証付きで rules 化 [tdd:skip:docs-only] | 2 リポジトリ以上で .claude/rules/ 追加コミットが入り、汎用パターンの配信元昇格の要否判断が記録されている | - | cc:TODO |
-| 1.4 | harvest-lessons の会社リポジトリ実走。gh auth（SSO 認可、必要なら fine-grained PAT read-only）→ 読み取り専用で収穫 → サニタイズ検証 [tdd:skip:docs-only] | 教訓が汎用化されて保存され、報告に「サニタイズ検証済み: 固有名 0 件・コード一致 0 件」が明記されている | 1.3 | cc:TODO |
-| 1.5 | メモリのブートストラップ。過去セッション・git 履歴から教訓を抽出し、各リポジトリの auto-memory を初期化（公式推奨手法） [tdd:skip:docs-only] | portfolio 以外の 2 リポジトリ以上で MEMORY.md＋個別メモリが作成されている | - | cc:TODO |
+| 1.1 | 品質の物差し作り（基準レビューセット）。portfolio＋会社リポジトリ（対象はユーザーが指定）の修正履歴から「バグ修正コミット直前」の diff を 5〜10 件選定して既知バグの正解リストを作り、Fable 5 の /code-review 結果とともに保存。保存先（2026-06-12 grill 確定、物差しは全リポジトリ共通資産）: 本体（個人ケース raw diff・正解リスト・レビュー結果・再実行手順 README・集計フォーマット）は本リポジトリの docs/quality-baseline/。会社ケースはローカル専用 manifest（~/dev/quality-baseline-private/、git 管理外）に repo 名＋SHA＋正解リストのみ保存し、raw diff は再実行時に gh 認証で都度取得。固有名を含まない集計数字のみ比較レポートに合流可。選定基準（2026-06-12 grill 確定）: レビューで検出可能な実装バグ限定（仕様誤解・環境起因・自明タイポ除外）、5 カテゴリ（ロジック/型・null/状態管理・hydration/非同期/設定・ビルド）×難易度分散、修正コミット SHA＋親 SHA を記録して再現可能に。会社分は 1.4 と同じ gh auth（SSO）前提を共有 [tdd:skip:docs-only] | 5 件以上のケース＋正解リスト＋Fable 5 レビュー結果が保存され、後日「別モデル＋資産」で同一セットを流して検出率比較できる再実行手順が README にある。正解リストは「ファイル＋関数（行範囲）＋根本原因 1 行＋重大度」で記録し、判定は「同一ファイルかつ同一根本原因で検出成功（行・表現ズレ許容）」、集計は 検出/部分検出/見逃し＋追加指摘（要真偽判定）の 4 区分（2026-06-12 grill 確定） | - | cc:TODO |
+| 1.2 | 既存 skills の Fable 5 推敲。commit / pr / issue / test / todo / pull-assets / push-asset の各 SKILL.md を「原則＋チェックリスト＋過去事例」形式へ統一し、旧モデル向けの細かすぎる手順を削除（公式ガイドの推奨。code-review / reviewer は対応済み。review は 2.1 で削除確定のため対象外） [tdd:skip:docs-only] | 全 7 skill の見直し PR がマージされ version bump 済み。削った指示と残した指示の判断理由が PR 本文にある | - | cc:TODO |
+| 1.3 | harvest-lessons の初回収穫（自リポジトリ）。対象は Antenna ＋ tech-blog で確定（2026-06-12 grill。履歴量 79 / 104 commits で裏付け。security-lab は 2 commits のため除外）。頻出修正パターンを検証付きで rules 化 [tdd:skip:docs-only] | 2 リポジトリ以上で .claude/rules/ 追加コミットが入り、汎用パターンの配信元昇格の要否判断が記録されている | - | cc:TODO |
+| 1.4 | harvest-lessons の会社リポジトリ実走。SSO 認可・対象リポジトリ指定・read アクセス確認は完了済み（2026-06-12。名称・アクセス手順はローカル manifest ~/dev/quality-baseline-private/ 参照）。読み取り専用で収穫 → サニタイズ検証 [tdd:skip:docs-only] | 教訓が汎用化されて保存され、報告に「サニタイズ検証済み: 固有名 0 件・コード一致 0 件」が明記されている | 1.3 | cc:TODO |
+| 1.5 | メモリのブートストラップ。対象は Antenna ＋ tech-blog で確定（2026-06-12 grill、1.3 と同一）。過去セッション・git 履歴から教訓を抽出し、各リポジトリの auto-memory を初期化（公式推奨手法） [tdd:skip:docs-only] | portfolio 以外の 2 リポジトリ以上で MEMORY.md＋個別メモリが作成されている | - | cc:TODO |
 
 ## Phase 2: 体制の完成
 
 | Task | 内容 | DoD | Depends | Status |
 |------|------|-----|---------|--------|
-| 2.1 | harness と自前資産の役割分担を確定。推奨案: harness = 計画・実行規律（plan/work/breezing）、自前 = レビューの中身（検証パス）＋ pr-review-loop、統合は常に PR ブランチ（main 直 cherry-pick 禁止）。確定後に docs / CLAUDE.md へ明文化し、/review vs harness-review 等の重複を整理 [tdd:skip:docs-only] | 方針文書がマージされ、重複 skill の扱い（残す/削る/再編）が明記されている | - | cc:TODO |
+| 2.1 | harness と自前資産の役割分担の文書化。方針は 2026-06-12 grill で確定済み: harness = 計画・実行規律（plan/work/breezing、サイクル内 verdict ゲートの harness-review / reviewer agent を含む）、自前 = 明示レビュー /code-review（lite/standard/full）＋ pr-review-loop（マージは 3.1 計測まで手動維持）、/review は削除（/code-review lite が代替。assets と SETUP.md から除去）、統合は常に PR ブランチ（main 直 cherry-pick 禁止。Lead はコミット分離の機械検証後に PR — 2.4 と連動）。残作業は docs / CLAUDE.md への明文化と /review 除去 [tdd:skip:docs-only] | 方針文書がマージされ、/review の削除を含む重複 skill の処遇が明記されている | - | cc:TODO |
 | 2.2 | pre-commit 品質ゲートの汎用化。「.githooks/pre-commit ＋ package manager の prepare 配線」規約を bootstrap skill に組み込み、リポジトリ構成（package.json / pyproject.toml / Cargo.toml 等）を検出して雛形を生成 [tdd:skip:docs-only] | bootstrap 実行で Node / Python 系リポジトリにゲート雛形が生成され、portfolio の手書き版と整合している | - | cc:TODO |
-| 2.3 | 他リポジトリへの bootstrap 展開。Antenna / tech-blog / security-lab（plugin 0.2.0 滞留の解消含む）等で実施 [tdd:skip:docs-only] | 各リポジトリに plugin 0.4.x＋settings.json＋assets＋品質ゲートの導入コミットが入っている | 2.2 | cc:TODO |
+| 2.3 | 他リポジトリへの bootstrap 展開。対象は Antenna / tech-blog / security-lab / post-syncer の 4 つで確定（2026-06-12 grill。後者 2 つは旧 plugin の更新が主目的、security-lab は 0.2.0 滞留の解消含む） [tdd:skip:docs-only] | 各リポジトリに plugin 0.5.x＋settings.json＋assets＋品質ゲートの導入コミットが入っている | 2.2 | cc:TODO |
 | 2.4 | breezing 安全策の資産化。worktree 衝突（Worker の worktree はセッション単位で並列時に共有される）への対策「Lead は cherry-pick 前にコミット分離を機械検証する」を配信元 docs に明文化。upstream（Chachamaru127/claude-code-harness）への issue 報告も要否判断 [tdd:skip:docs-only] | docs 追加がマージされ、upstream 報告の実施/見送りの判断が記録されている | - | cc:TODO |
 
 ## Phase 3: 実戦投入と仕上げ
