@@ -4,24 +4,21 @@ trigger: "when the user asks to see open issues, TODOs, or remaining tasks"
 disable-model-invocation: true
 ---
 
-# TODOスキル
+# TODO スキル
 
-オープン中のIssueを取得し、カテゴリ別に整理して表示する。
+## 原則
 
-## 手順
+- `gh issue list --state open --limit 50 --json number,title,labels,body,assignees,milestone,createdAt` で取得し、**ラベルをカテゴリとして**分類する（複数ラベルは先頭、なしは「未分類」）
+- 各行は `#番号 タイトル — 概要（body 先頭 1〜2 文、50 文字まで）` の形式。担当者・マイルストーンがあれば補足する
+- 0 件なら「オープン中の Issue はありません」とだけ表示する
 
-1. `gh issue list --state open --limit 50 --json number,title,labels,body,assignees,milestone,createdAt` でオープン中のIssueを取得する
-2. ラベルをカテゴリとして分類する（ラベルなしは「未分類」）
-3. 以下の形式で表示する
-
-### 表示形式
+## 表示例
 
 ```
 ## TODO一覧（オープンIssue: N件）
 
 ### 🐛 bug
 - #12 ログイン画面でエラーが発生する — ログインボタン押下時に500エラー
-- #8  メール送信が失敗する — SMTPタイムアウト
 
 ### ✨ enhancement
 - #15 ダッシュボードにグラフ追加 — 月別売上の棒グラフを表示
@@ -29,15 +26,3 @@ disable-model-invocation: true
 ### 未分類
 - #3  READMEの更新 — セットアップ手順を最新化
 ```
-
-各Issueの表示項目:
-- `#番号` Issue番号
-- タイトル
-- `—` の後にbodyの先頭1-2文を概要として表示（長い場合は50文字で切る）
-
-4. 担当者やマイルストーンが設定されている場合は補足情報として表示する
-
-## 注意事項
-
-- Issueが0件の場合は「オープン中のIssueはありません」と表示する
-- ラベルが複数ある場合は最初のラベルで分類する
