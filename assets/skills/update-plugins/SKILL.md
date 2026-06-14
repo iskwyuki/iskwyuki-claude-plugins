@@ -25,8 +25,9 @@ description: インストール済み Claude Code プラグインの更新確認
 ### 更新の適用
 
 1. 更新対象をユーザーに提示し、適用してよいか確認する
-2. `claude plugin update <plugin>@<marketplace>` を対象ごとに実行する
-3. **反映には Claude Code の再起動が必要**である旨を必ず伝える
+2. 対象プラグインのインストールスコープを確認する（`claude plugin list` または `~/.claude/plugins/installed_plugins.json`）。`claude plugin update` の `--scope` 既定は **user** のため、project / local スコープのプラグインはスコープを明示しないと `not installed at scope user` で失敗する
+3. `claude plugin update <plugin>@<marketplace> --scope <scope>` を対象ごとに実行する（user スコープなら `--scope` 省略可）。同一プラグインが複数プロジェクトに project スコープで入っている場合、更新は各プロジェクトディレクトリで個別に実行する
+4. **反映には Claude Code の再起動が必要**である旨を必ず伝える
 
 ## 巻き戻し（問題が起きたとき）
 
