@@ -4,6 +4,17 @@ iskwyuki 個人用 Claude Code アセットの配信基盤。
 
 複数リポジトリで共通利用する skills / agents / (将来的な) hooks / commands を中央管理し、Claude Code の Plugin Marketplace 機構で継続配信します。
 
+## 配信の2レイヤー
+
+性質の異なる 2 つの仕組みでアセットを配ります。**harness は ① で自動的に入り、`pull-assets`（②）では入りません。**
+
+| レイヤー | 運ぶもの | 入り方 |
+|---|---|---|
+| **① Plugin 機構** | iskwyuki 本体 + **claude-code-harness** | `/plugin install` 一発（harness は `dependencies` で自動同梱） |
+| **② asset 機構** | iskwyuki 固有の skills / agents | `/pull-assets` でプロジェクトの `.claude/` にコピー |
+
+harness は「プラグイン」であって「asset」ではないため ① で入ります。`pull-assets`（②）の対象では**ありません**。詳細は [SETUP.md](./SETUP.md) を参照。
+
 ## 使い方
 
 セットアップ手順は [SETUP.md](./SETUP.md) を参照してください。

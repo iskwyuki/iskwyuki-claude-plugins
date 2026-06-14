@@ -17,11 +17,22 @@ git add .claude/ && git commit -m "chore: iskwyuki-claude-plugins 初回同期"
 
 bootstrap が終わると、プロジェクトの `.claude/` に `pull-assets`, `push-asset` を含む全 asset が展開され、以降は短縮名で運用できます。
 
-## 同梱プラグイン（claude-code-harness）
+## 配信の2レイヤー（harness はどちらで入るか）
 
-本プラグインは `plugin.json` の `dependencies` で [claude-code-harness](https://github.com/Chachamaru127/claude-code-harness) を宣言しており、インストール時に自動でインストール・有効化されます（Claude Code v2.1.143+）。マーケットプレイス定義に外部ソースとして掲載済みのため、追加の marketplace 登録は不要です。
+本プラグインは性質の異なる 2 つの仕組みでアセットを配ります。**[claude-code-harness](https://github.com/Chachamaru127/claude-code-harness) は ① で自動的に入り、`pull-assets`（②）では入りません。**
 
-掲載はバージョンピンなし（本家デフォルトブランチ追従）です。問題が起きた場合の巻き戻しは `/update-plugins` の手順（`ref` / `sha` ピン留め）を参照してください。
+| レイヤー | 運ぶもの | 入り方 | 追従 |
+|---|---|---|---|
+| **① Plugin 機構**（Claude Code ネイティブ） | iskwyuki 本体 + **claude-code-harness** | `/plugin install` 一発。harness は `plugin.json` の `dependencies` で自動解決され、同時に install・有効化される（インストール出力に `(+ 1 dependency: claude-code-harness)` と表示される） | marketplace / 本家追従 |
+| **② asset 機構**（自作 `pull-assets` / `push-asset`） | iskwyuki 固有の軽量 skills / agents | `bootstrap` / `/pull-assets` でプロジェクトの `.claude/` にコピーしてコミット | 手動同期 |
+
+harness は「プラグイン」であって「asset」ではないため、②（`pull-assets`）の対象には**含めません**（丸ごと `.claude/` に展開すると本家追従が壊れ、選別ミラー方針とも矛盾するため）。「iskwyuki を入れれば harness も各リポで使える」という狙いは ① の dependencies 機構だけで完結しています。
+
+### dependencies 機構の前提と挙動
+
+- harness は `marketplace.json` に**同一 marketplace 内の外部 github ソース**として掲載されているため、`allowCrossMarketplaceDependenciesOn` の設定なしで自動解決されます（dependencies 対応は Claude Code v2.1.110+）。追加の marketplace 登録は不要です
+- 掲載はバージョンピンなし（本家デフォルトブランチ追従）です。問題が起きた場合の巻き戻しは `/update-plugins` の手順（`ref` / `sha` ピン留め）を参照してください
+- **`plugin update` は依存を再解決しません。** 古い版から更新したなどで harness だけ欠けているリポは、そのルートで**再 install**すると補完されます（→ トラブルシューティング）
 
 ## 外部由来の選別ミラー skill（grill-me / zoom-out / prototype / find-skills）
 
@@ -156,6 +167,16 @@ git clone https://github.com/iskwyuki/iskwyuki-claude-plugins.git ~/dev/iskwyuki
 ```
 
 もしくは `CLAUDE_PLUGINS_REPO` で別パスを指定してください。
+
+### 既存リポで harness だけ入っていない
+
+`iskwyuki-claude-plugins` は入っているのに `claude-code-harness` が無いリポがある場合（harness 同梱導入より前に入れた、`plugin update` だけで上げた等）。`plugin update` は依存を**再解決しない**ため、そのリポのルートで **再 install** する:
+
+```
+claude plugin install iskwyuki-claude-plugins@iskwyuki-claude-plugins --scope project
+```
+
+`(+ 1 dependency: claude-code-harness)` と表示され、harness が補完される。
 
 ## 新しい配布対象タイプが増えたとき
 
