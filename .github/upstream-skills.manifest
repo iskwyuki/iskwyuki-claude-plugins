@@ -1,0 +1,9 @@
+# 上流 skills からの選別ミラー対象（形式: <上流リポジトリ> <上流パス> <ローカルパス>）
+# 行頭 # はコメント。skill を追加するときはここに行を足すだけで同期対象になる。
+# 上流リポジトリ列を追加すれば mattpocock/skills 以外の上流も同期対象にできる（ref は workflow の UPSTREAM_REF を共用）。
+mattpocock/skills skills/productivity/grill-me/SKILL.md assets/skills/grill-me/SKILL.md
+mattpocock/skills skills/engineering/zoom-out/SKILL.md assets/skills/zoom-out/SKILL.md
+mattpocock/skills skills/engineering/prototype/SKILL.md assets/skills/prototype/SKILL.md
+mattpocock/skills skills/engineering/prototype/LOGIC.md assets/skills/prototype/LOGIC.md
+mattpocock/skills skills/engineering/prototype/UI.md assets/skills/prototype/UI.md
+vercel-labs/skills skills/find-skills/SKILL.md assets/skills/find-skills/SKILL.md

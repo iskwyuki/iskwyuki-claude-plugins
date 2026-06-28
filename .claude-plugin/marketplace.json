@@ -1,0 +1,27 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "iskwyuki-claude-plugins",
+  "description": "iskwyuki 個人用 Claude Code アセットの配信基盤。bootstrap skill と共通 skills/agents を提供",
+  "owner": {
+    "name": "iskwyuki"
+  },
+  "plugins": [
+    {
+      "name": "iskwyuki-claude-plugins",
+      "description": "bootstrap + pull-assets/push-asset + 共通 skills/agents の配信プラグイン",
+      "source": "./",
+      "category": "development",
+      "homepage": "https://github.com/iskwyuki/iskwyuki-claude-plugins"
+    },
+    {
+      "name": "claude-code-harness",
+      "description": "Plan→Work→Review の自律開発サイクルを提供するハーネス（Chachamaru127/claude-code-harness を外部参照で掲載）",
+      "source": {
+        "source": "github",
+        "repo": "Chachamaru127/claude-code-harness"
+      },
+      "category": "development",
+      "homepage": "https://github.com/Chachamaru127/claude-code-harness"
+    }
+  ]
+}

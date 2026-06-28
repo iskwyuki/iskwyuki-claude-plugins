@@ -1,0 +1,5 @@
+# ランタイム状態（セッションローカル。2026-06-14 の混入事故の再発防止）
+.claude/state/
+.claude/sessions/
+.claude/memory/
+out/

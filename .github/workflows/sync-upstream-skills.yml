@@ -1,0 +1,41 @@
+name: Sync upstream skills (mattpocock/skills, vercel-labs/skills)
+
+on:
+  schedule:
+    - cron: "0 21 * * *" # 06:00 JST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  UPSTREAM_REF: main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch upstream files per manifest
+        run: |
+          set -euo pipefail
+          while read -r repo src dest; do
+            case "$repo" in ""|\#*) continue ;; esac
+            mkdir -p "$(dirname "$dest")"
+            curl -fsSL "https://raw.githubusercontent.com/${repo}/${UPSTREAM_REF}/${src}" -o "$dest"
+          done < .github/upstream-skills.manifest
+
+      - name: Create sync PR if changed
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: chore/sync-upstream-skills
+          delete-branch: true
+          commit-message: "chore: 上流 skills の変更を選別ミラーへ同期"
+          title: "chore: 上流 skills 変更の取り込み"
+          body: |
+            `.github/workflows/sync-upstream-skills.yml` による自動同期 PR です。
+            上流（[mattpocock/skills](https://github.com/mattpocock/skills) / [vercel-labs/skills](https://github.com/vercel-labs/skills)）の変更を `.github/upstream-skills.manifest` の対象に反映しました。
+
+            マージ後は各プロジェクトで `/pull-assets` を実行すると反映されます。
