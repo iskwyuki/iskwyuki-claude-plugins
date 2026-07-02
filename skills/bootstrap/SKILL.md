@@ -114,15 +114,16 @@ rsync -av "$PLUGIN_ROOT/assets/<type>/" ./.claude/<type>/
 
 #### 共通チェックリスト（全種別、生成から配線まで）
 
-- [ ] 既存フック機構がないこと: `git config core.hooksPath` が未設定 / `.husky/` が無い / `scripts.prepare` に husky・lefthook 等が無い（1 つでも該当すればスキップして報告）
+- [ ] 既存フック機構の検出。次のいずれかが**検出されたらスキップして報告**する: `git config core.hooksPath` が設定済み / `.husky/` がある / `scripts.prepare`・`scripts.postinstall` に husky・lefthook 等がある / `lefthook.yml`（`.lefthook.yml` 含む）がある / `.git/hooks` に sample 以外の有効なフックがある / 既存の `.githooks/pre-commit` がある（上書きしない）。どれも検出されない場合のみ生成に進む
+- [ ] 冪等性: 既存の prepare / hooksPath が本規約そのもの（`git config core.hooksPath .githooks`）の場合は導入済みとして何も変更しない（同一コマンドを連結して重複させない）
 - [ ] 採用する段が 1 つ以上あること。チェックリストで全段が省かれた場合は**ゲート生成自体をスキップ**する（echo だけの形骸ゲートと無意味な prepare 変更を作らない）
 - [ ] 生成後に `chmod +x .githooks/pre-commit`（実行権限が無いと git はフックを黙って無視する）
-- [ ] **配線前に** `sh .githooks/pre-commit` を 1 回実行し、現状のツリーで PASS することを確認。fail する場合は配線せず、fail 内容を報告して手動判断に委ねる（fail するゲートを配線すると直後の初回同期コミット自体が通らなくなる）
-- [ ] 検証: 配線後に `git config core.hooksPath` が `.githooks` を返すこと
+- [ ] **配線前に** `sh .githooks/pre-commit` を 1 回実行し、現状のツリーで PASS することを確認する。実行前に依存が導入済みか確認し（Node の `node_modules` 等）、未導入なら先に install してから dry-run する。コマンド不在（exit 127）は品質 fail ではなく前提未充足として扱い、install 後に再実行する。実際のチェック fail の場合は配線せず、fail 内容を報告して手動判断に委ねる（fail するゲートを配線すると直後の初回同期コミット自体が通らなくなる）
+- [ ] 検証: Python / Rust 系（`git config` 直接配線）は配線直後に `git config core.hooksPath` が `.githooks` を返すこと。Node 系は prepare 経由のため install / prepare 実行後に確認する（配線直後に未設定なのは失敗ではない。Node チェックリスト参照）
 
 #### 雛形: Node 系（portfolio の手書き版と同一形式）
 
-パッケージマネージャは lockfile で判定する（`pnpm-lock.yaml` → pnpm / `yarn.lock` → yarn / `package-lock.json` → npm）。以下は pnpm の例。
+パッケージマネージャは lockfile で判定する（`pnpm-lock.yaml` → pnpm / `yarn.lock` → yarn / `package-lock.json` → npm）。lockfile が無い場合は `package.json` の `packageManager` フィールドで判定し、それも無ければ npm を既定とする。以下は pnpm の例。
 
 ```sh
 #!/bin/sh
@@ -208,7 +209,7 @@ Rust チェックリスト（共通チェックリストに追加で）:
   - prepare を配線した場合のみ: `package.json`
   - セットアップ文書に追記した場合のみ: `README.md` 等の該当ファイル
   - 例（Node 系フル構成）: `git status -- .claude/ .githooks/ package.json` → `git add .claude/ .githooks/ package.json`
-  - 例（ゲートをスキップした場合）: `git add .claude/` のみ
+  - 例（ゲートをスキップした場合）: `git status -- .claude/` で差分を確認の上 `git add .claude/` のみ
 - `git commit -m "chore: iskwyuki-claude-plugins 初回同期"` を案内（`git add -A` は使わない）
 - 品質ゲートをスキップ・縮小した場合はその理由を報告に含める
 - 以降は `/pull-assets` と `/push-asset` が短縮名で利用可能になる旨を伝える

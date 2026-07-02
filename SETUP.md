@@ -10,6 +10,7 @@
 /plugin marketplace add iskwyuki/iskwyuki-claude-plugins
 /plugin install iskwyuki-claude-plugins@iskwyuki-claude-plugins
 /iskwyuki-claude-plugins:bootstrap
+# bootstrap が品質ゲートを生成した場合は、完了報告が提示する明示パス（.githooks/ 等）を add に加える
 git add .claude/ && git commit -m "chore: iskwyuki-claude-plugins 初回同期"
 ```
 
@@ -17,7 +18,7 @@ git add .claude/ && git commit -m "chore: iskwyuki-claude-plugins 初回同期"
 
 `/plugin install` のフォーマットは `<plugin-name>@<marketplace-name>` で、今回はどちらも同じ `iskwyuki-claude-plugins` です。
 
-bootstrap が終わると、プロジェクトの `.claude/` に `pull-assets`, `push-asset` を含む全 asset が展開され、以降は短縮名で運用できます。あわせて品質ゲート（`.githooks/pre-commit` ＋ package manager の prepare 配線）がリポジトリ構成（package.json / pyproject.toml / Cargo.toml）に合わせて生成されます（既存フックは上書きしません。詳細は bootstrap skill の Step 7）。
+bootstrap が終わると、プロジェクトの `.claude/` に `pull-assets`, `push-asset` を含む全 asset が展開され、以降は短縮名で運用できます。あわせて品質ゲート（`.githooks/pre-commit`）がリポジトリ構成（package.json / pyproject.toml / Cargo.toml）に合わせて生成されます。配線は Node 系が `scripts.prepare`、Python / Rust 系が `git config` 直接実行＋セットアップ文書への追記です。既存のフック機構がある場合・設定済みで現状 PASS するチェックが無い場合・マーカーが無い場合は生成をスキップし、理由を報告します（詳細は bootstrap skill の Step 7）。
 
 ## 配信の2レイヤー（harness はどちらで入るか）
 
