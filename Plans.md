@@ -4,11 +4,11 @@
 
 **目的**: Fable 5 がサブスク枠で使えるうちに、開発品質をモデル非依存のハーネス資産（プラグイン・rules・ゲート・物差し）へ焼き込む。
 
-**期限**: Fable 5 のサブスク枠は **2026-06-22 まで**。全 12 タスクをこの期限までに消化する方針（2026-06-12 の grill セッションで確定）。外部レイテンシのある 1.4 の SSO 認可申請は最優先で先行着手する。
+**期限**: Fable 5 のサブスク枠は **2026-07-07 まで**（2026-07-02 更新。旧期限 2026-06-22 は経過し、その後 Fable 5 が再度利用可能になった）。Fable 5 依存タスク（1.3 / 1.4 / 1.5）をこの期限までに消化することを最優先とし、モデル非依存タスク（Phase 2 / 3）は期限後でも継続可。1.4 の SSO 認可・read アクセスは確認済み（2026-07-02 再検証、生存）。
 
 **前提（完了済み）**: 配布基盤 v0.4.2（harness 同梱・settings 自動展開・更新モニタ全状態出力）/ harvest-lessons（サニタイズ必須）/ code-review 全件報告＋検証パス＋rules-checker / pr-review-loop / portfolio での実証一式（pre-commit ゲート・rules 3点・breezing 1サイクル・PR #26 マージ）。
 
-**推奨着手順**: 1.1 → 2.1 → 1.2 → 2.2 → 2.3 → 1.3 / 1.5 → Phase 3。Phase 1 は Fable 5 の残期間に直接依存するため優先。
+**推奨着手順**: 1.3 → 1.4 → 1.5 → 2.2 → 2.4 → 2.3 → Phase 3（2026-07-02 改訂。旧順序 2.2 → 2.3 → 1.3/1.5 は期限内全消化前提だった）。改訂理由: Fable 5 の可用性は一度失われた実績があるため、生成物の質がモデルに依存する資産生成（harvest / メモリ初期化）を先行し、モデル非依存の配管（bootstrap 汎用化・展開）を後続とするヘッジ。1.1 / 1.2 / 2.1 は完了済み。
 
 **関連メモリ**（portfolio プロジェクトの memory）: 品質資産イニシアチブ / harness worktree 衝突 / ツール直前テキスト非表示問題。
 
@@ -30,7 +30,7 @@
 |------|------|-----|---------|--------|
 | 2.1 | harness と自前資産の役割分担の文書化。方針は 2026-06-12 grill で確定済み: harness = 計画・実行規律（plan/work/breezing、サイクル内 verdict ゲートの harness-review / reviewer agent を含む）、自前 = 明示レビュー /code-review（lite/standard/full）＋ pr-review-loop（マージは 3.1 計測まで手動維持）、/review は削除（/code-review lite が代替。assets と SETUP.md から除去）、統合は常に PR ブランチ（main 直 cherry-pick 禁止。Lead はコミット分離の機械検証後に PR — 2.4 と連動）。残作業は docs / CLAUDE.md への明文化と /review 除去 [tdd:skip:docs-only] | 方針文書がマージされ、/review の削除を含む重複 skill の処遇が明記されている | - | cc:完了 |
 | 2.2 | pre-commit 品質ゲートの汎用化。「.githooks/pre-commit ＋ package manager の prepare 配線」規約を bootstrap skill に組み込み、リポジトリ構成（package.json / pyproject.toml / Cargo.toml 等）を検出して雛形を生成 [tdd:skip:docs-only] | bootstrap 実行で Node / Python 系リポジトリにゲート雛形が生成され、portfolio の手書き版と整合している | - | cc:TODO |
-| 2.3 | 他リポジトリへの bootstrap 展開。対象は Antenna / tech-blog / security-lab / post-syncer の 4 つで確定（2026-06-12 grill。後者 2 つは旧 plugin の更新が主目的、security-lab は 0.2.0 滞留の解消含む） [tdd:skip:docs-only] | 各リポジトリに plugin 0.5.x＋settings.json＋assets＋品質ゲートの導入コミットが入っている | 2.2 | cc:TODO |
+| 2.3 | 他リポジトリへの bootstrap 展開。対象は Antenna / tech-blog / security-lab / post-syncer の 4 つで確定（2026-06-12 grill。後者 2 つは旧 plugin の更新が主目的、security-lab は 0.2.0 滞留の解消含む） [tdd:skip:docs-only] | 各リポジトリに plugin 現行版（0.8.x 以降）＋settings.json＋assets＋品質ゲートの導入コミットが入っている | 2.2 | cc:TODO |
 | 2.4 | breezing 安全策の資産化。worktree 衝突（Worker の worktree はセッション単位で並列時に共有される）への対策「Lead は cherry-pick 前にコミット分離を機械検証する」を配信元 docs に明文化。upstream（Chachamaru127/claude-code-harness）への issue 報告も要否判断 [tdd:skip:docs-only] | docs 追加がマージされ、upstream 報告の実施/見送りの判断が記録されている | - | cc:TODO |
 
 ## Phase 3: 実戦投入と仕上げ
