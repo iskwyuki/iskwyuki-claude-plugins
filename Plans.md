@@ -22,7 +22,7 @@
 | 1.2 | 既存 skills の Fable 5 推敲。commit / pr / issue / test / todo / pull-assets / push-asset の各 SKILL.md を「原則＋チェックリスト＋過去事例」形式へ統一し、旧モデル向けの細かすぎる手順を削除（公式ガイドの推奨。code-review / reviewer は対応済み。review は 2.1 で削除確定のため対象外） [tdd:skip:docs-only] | 全 7 skill の見直し PR がマージされ version bump 済み。削った指示と残した指示の判断理由が PR 本文にある | - | cc:完了 |
 | 1.3 | harvest-lessons のパイプライン・リハーサル（2026-06-13 縮小確定: 収穫の主軸が会社側に移ったため）。tech-blog 1 本で収穫→検証→rules 化→サニタイズ検証の一連の流れを実走し、1.4 本番前に手順を確立する（Antenna は余裕があれば追加） [tdd:skip:docs-only] | tech-blog に .claude/rules/ 追加コミットが入り、パイプライン動作確認（サニタイズ検証含む）の記録がある | - | cc:完了 [0185d3d] |
 | 1.4 | harvest-lessons の会社リポジトリ実走。データ源の主軸（2026-06-13 確定）。SSO 認可・対象 2 リポジトリの read アクセス確認は完了済み（名称・アクセス手順はローカル manifest ~/dev/quality-baseline-private/ 参照）。読み取り専用で収穫 → サニタイズ検証 [tdd:skip:docs-only] | 教訓が汎用化されて保存され、報告に「サニタイズ検証済み: 固有名 0 件・コード一致 0 件」が明記されている | 1.3 | cc:完了 [86d829b] |
-| 1.5 | メモリのブートストラップ。対象は Antenna ＋ tech-blog で確定（2026-06-12 grill、1.3 と同一）。過去セッション・git 履歴から教訓を抽出し、各リポジトリの auto-memory を初期化（公式推奨手法） [tdd:skip:docs-only] | portfolio 以外の 2 リポジトリ以上で MEMORY.md＋個別メモリが作成されている | - | cc:TODO |
+| 1.5 | メモリのブートストラップ。対象は Antenna ＋ tech-blog で確定（2026-06-12 grill、1.3 と同一）。過去セッション・git 履歴から教訓を抽出し、各リポジトリの auto-memory を初期化（公式推奨手法） [tdd:skip:docs-only] | portfolio 以外の 2 リポジトリ以上で MEMORY.md＋個別メモリが作成されている | - | cc:完了 |
 
 ## Phase 2: 体制の完成
 
