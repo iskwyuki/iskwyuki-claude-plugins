@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: iskwyuki-claude-plugins の初回セットアップ skill。Plugin install 直後に Skill tool 経由で呼び出し、SETUP.md を提示してからプロジェクトの .claude/ に全 asset を初回展開する。
+description: iskwyuki-claude-plugins の初回セットアップ skill。Plugin install 直後に Skill tool 経由で呼び出し、SETUP.md を提示してからプロジェクトの .claude/ に全 asset を初回展開し、品質ゲート（.githooks/pre-commit）をリポジトリ構成に合わせて生成する。
 ---
 
 # bootstrap
@@ -89,8 +89,102 @@ rsync -av "$PLUGIN_ROOT/assets/<type>/" ./.claude/<type>/
 
 これにより、このリポジトリを開いた別環境でも marketplace 追加とプラグイン有効化（依存の claude-code-harness を含む）がプロンプト一発で再現される。
 
-### Step 7: 完了報告
+### Step 7: 品質ゲート（pre-commit）の展開
 
-- `.claude/` 配下の変更を `git status -- .claude/` で確認させる
-- `git add .claude/ && git commit -m "chore: iskwyuki-claude-plugins 初回同期"` を案内
+「`.githooks/pre-commit` ＋ package manager の prepare 配線」規約（portfolio で実証済み）を、リポジトリ構成を検出して展開する。
+
+#### 原則
+
+- ゲートに入れるのは**そのリポジトリで既に設定済みのチェックだけ**。未設定のツールを bootstrap が新規導入しない（配線が bootstrap の責務、ツール選定はリポジトリ側の責務）
+- 既存の `.githooks/pre-commit` がある場合は**上書きしない**。雛形との差分を提示して手動判断に委ねる
+- 配線は git ネイティブ層（`core.hooksPath`）に行う。Claude 経由・手動を問わず、すべてのコミットに適用させるため
+- 緊急回避は `git commit --no-verify`（原則使わない）
+
+#### 構成検出と prepare 配線
+
+ルート直下のマーカーで種別を判定する（複数ある場合はルートの主言語を優先）。
+
+| マーカー | 種別 | prepare 配線 |
+|---|---|---|
+| `package.json` | Node 系 | `scripts.prepare` に `git config core.hooksPath .githooks` を設定（既存の prepare がある場合は `既存コマンド && git config core.hooksPath .githooks` で連結） |
+| `pyproject.toml` | Python 系 | prepare 相当がないため `git config core.hooksPath .githooks` を直接実行し、README のセットアップ手順に同コマンドを 1 行追記 |
+| `Cargo.toml` | Rust 系 | 同上（cargo に prepare 相当なし） |
+| いずれもなし | - | スキップし、skip 理由を完了報告に含める |
+
+#### 雛形: Node 系（portfolio の手書き版と同一形式）
+
+パッケージマネージャは lockfile で判定する（`pnpm-lock.yaml` → pnpm / `yarn.lock` → yarn / `package-lock.json` → npm）。以下は pnpm の例。
+
+```sh
+#!/bin/sh
+# 品質ゲート: コミット前に lint と型チェックを必ず通す。
+# Claude 経由・手動を問わず、すべてのコミットに git ネイティブ層で適用される。
+# 緊急回避は git commit --no-verify（原則使わない）。
+set -e
+
+echo "[quality-gate] pnpm lint"
+pnpm lint
+
+echo "[quality-gate] tsc --noEmit"
+pnpm exec tsc --noEmit
+
+echo "[quality-gate] OK"
+```
+
+チェックリスト:
+
+- [ ] `package.json` の `scripts` に `lint` があるか。なければ lint 段を省く
+- [ ] `tsconfig.json` があるか。JS のみのリポジトリなら tsc 段を省く
+- [ ] pnpm 以外の場合はコマンドを読み替える（npm なら `npm run lint` / `npx tsc --noEmit`）
+- [ ] 生成後に `chmod +x .githooks/pre-commit`
+- [ ] 検証: `pnpm install`（または prepare 手動実行）後に `git config core.hooksPath` が `.githooks` を返すこと
+
+#### 雛形: Python 系
+
+`pyproject.toml` に設定がある（`[tool.ruff]` / `[tool.mypy]` 等）ツールだけを段に入れる。
+
+```sh
+#!/bin/sh
+# 品質ゲート: コミット前に lint と型チェックを必ず通す。
+# Claude 経由・手動を問わず、すべてのコミットに git ネイティブ層で適用される。
+# 緊急回避は git commit --no-verify（原則使わない）。
+set -e
+
+echo "[quality-gate] ruff check"
+ruff check .
+
+echo "[quality-gate] mypy"
+mypy .
+
+echo "[quality-gate] OK"
+```
+
+#### 雛形: Rust 系
+
+```sh
+#!/bin/sh
+# 品質ゲート: コミット前にフォーマットと clippy を必ず通す。
+# Claude 経由・手動を問わず、すべてのコミットに git ネイティブ層で適用される。
+# 緊急回避は git commit --no-verify（原則使わない）。
+set -e
+
+echo "[quality-gate] cargo fmt --check"
+cargo fmt --check
+
+echo "[quality-gate] cargo clippy"
+cargo clippy --all-targets -- -D warnings
+
+echo "[quality-gate] OK"
+```
+
+#### 過去事例
+
+- portfolio（Node / pnpm）: lint ＋ `tsc --noEmit` の 2 段ゲート。`prepare` 配線により clone 直後の install で自動有効化（2026-06 実証）
+- アンチパターン: 未設定ツールをゲートに入れると初回コミットから fail し、`--no-verify` が常態化してゲートが形骸化する
+
+### Step 8: 完了報告
+
+- `.claude/` と `.githooks/` 配下の変更を `git status -- .claude/ .githooks/` で確認させる
+- `git add .claude/ .githooks/`（Node 系で prepare を配線した場合は `package.json` も追加）の上で `git commit -m "chore: iskwyuki-claude-plugins 初回同期"` を案内（`git add -A` は使わない）
+- 品質ゲートをスキップした場合はその理由を報告に含める
 - 以降は `/pull-assets` と `/push-asset` が短縮名で利用可能になる旨を伝える
