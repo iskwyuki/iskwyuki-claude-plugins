@@ -13,6 +13,8 @@
 git add .claude/ && git commit -m "chore: iskwyuki-claude-plugins 初回同期"
 ```
 
+最後のコミットは基本 `.claude/` のみですが、bootstrap が品質ゲートを生成した場合は完了報告（Step 8）が提示する明示パス（`.githooks/`、prepare 配線時は `package.json`、セットアップ文書追記時は `README.md` 等）を加えてください。
+
 `/plugin install` のフォーマットは `<plugin-name>@<marketplace-name>` で、今回はどちらも同じ `iskwyuki-claude-plugins` です。
 
 bootstrap が終わると、プロジェクトの `.claude/` に `pull-assets`, `push-asset` を含む全 asset が展開され、以降は短縮名で運用できます。あわせて品質ゲート（`.githooks/pre-commit` ＋ package manager の prepare 配線）がリポジトリ構成（package.json / pyproject.toml / Cargo.toml）に合わせて生成されます（既存フックは上書きしません。詳細は bootstrap skill の Step 7）。
