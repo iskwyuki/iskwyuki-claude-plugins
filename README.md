@@ -38,7 +38,7 @@ bootstrap 完了後、プロジェクトの `.claude/` 配下に `pull-assets` /
 
 ### プラグイン更新モニタ
 
-同梱の SessionStart hook が、セッション開始時にインストール済みプラグインの更新有無をチェックして通知します（TTL 12時間。ただし失敗を含む結果は 1 時間で失効し自動再チェック）。実施・スキップ・失敗・検知のすべての状態を 1 行で表示します。更新の適用・失敗時の対処・巻き戻しは `/update-plugins` を参照。
+同梱の SessionStart hook が、セッション開始時にインストール済みプラグインの更新有無をチェックして通知します（TTL 12時間。ただし失敗を含む結果は 1 時間で失効し自動再チェック）。実施・スキップ・失敗・検知のすべての状態を 1 行で表示します。更新の適用・失敗時の対処・巻き戻しは `/iskwyuki-claude-plugins:update-plugins` を参照。
 
 ## リポジトリ構造
 
@@ -48,7 +48,8 @@ bootstrap 完了後、プロジェクトの `.claude/` 配下に `pull-assets` /
 │   ├── marketplace.json     # Plugin Marketplace 定義
 │   └── plugin.json          # plugin 定義
 ├── skills/
-│   └── bootstrap/           # /iskwyuki-claude-plugins:bootstrap (初回導入の踏み台)
+│   ├── bootstrap/           # /iskwyuki-claude-plugins:bootstrap (初回導入の踏み台)
+│   └── update-plugins/      # /iskwyuki-claude-plugins:update-plugins (更新の適用・巻き戻し)
 ├── hooks/
 │   ├── hooks.json           # SessionStart: プラグイン更新チェック
 │   └── check-plugin-updates.sh
@@ -56,7 +57,7 @@ bootstrap 完了後、プロジェクトの `.claude/` 配下に `pull-assets` /
 │   ├── skills/
 │   │   ├── pull-assets/     # /pull-assets (配信元 → プロジェクト)
 │   │   ├── push-asset/      # /push-asset (プロジェクト → 配信元)
-│   │   ├── review/ commit/ pr/ issue/ test/ todo/ code-review/ update-plugins/
+│   │   ├── commit/ pr/ issue/ test/ todo/ code-review/
 │   └── agents/
 │       └── codebase-analyst.md planner.md researcher.md reviewer.md
 ├── SETUP.md                 # セットアップ手順 (利用者向け)
