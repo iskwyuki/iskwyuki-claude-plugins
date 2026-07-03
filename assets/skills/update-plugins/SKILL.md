@@ -22,6 +22,14 @@ description: インストール済み Claude Code プラグインの更新確認
    bash <plugin-root>/hooks/check-plugin-updates.sh </dev/null
    ```
 
+### 「⚠ 一部失敗」通知が出ているとき
+
+SessionStart の「一部失敗: marketplace 定義の更新に失敗」等は、前回チェック時の一時的な失敗（ネットワーク・認証切れ等）がキャッシュされている場合が大半。以下で解消する:
+
+1. `claude plugin marketplace update` を実行して今は成功するか確認する（成功すれば一時的な失敗だったと判断できる）
+2. 失敗が再現する場合は原因を切り分ける: `gh auth status`（認証切れ）、ネットワーク到達性、`~/.claude/plugins/marketplaces/` 配下の git リポジトリの状態
+3. 上記「更新の確認」手順 3 のキャッシュ削除 → hook 再実行でキャッシュを正常結果に更新する（失敗のみのキャッシュは 1 時間で自動失効するため、放置しても次回セッションで自動再チェックされる）
+
 ### 更新の適用
 
 1. 更新対象をユーザーに提示し、適用してよいか確認する
