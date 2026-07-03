@@ -2,6 +2,8 @@
 # SessionStart hook: インストール済みプラグインの更新有無をチェックして通知する。
 # 「実施・TTLスキップ・失敗・検知」のすべてで systemMessage を 1 行以上出す（無音にしない）。
 # 無音は「更新がない」のか「チェックが失敗している」のか区別できないため。
+# 失敗のみの結果はキャッシュ 1 時間で失効させ、次回セッション開始時に自動で再チェックする
+# （一時的なネットワーク失敗が TTL いっぱい再掲され続けるのを防ぐ）。
 set -u
 
 INPUT=$(cat 2>/dev/null || true)
@@ -32,16 +34,18 @@ import json, sys
 cache = json.load(open(sys.argv[1]))
 now, ttl = int(sys.argv[2]), int(sys.argv[3])
 age = now - int(cache.get("checked_at", 0))
-if age < ttl * 3600:
+ups = cache.get("updates", [])
+errs = cache.get("errors", [])
+# 失敗のみのキャッシュは最長 1 時間で失効させ、次回セッションで自動再チェックする
+ttl_eff = min(ttl, 1) if (errs and not ups) else ttl
+if age < ttl_eff * 3600:
     h, m = age // 3600, (age % 3600) // 60
     ago = f"{h}時間{m}分前" if h else f"{m}分前"
-    ups = cache.get("updates", [])
-    errs = cache.get("errors", [])
     if ups:
         body = ", ".join(f"{u['plugin']} {u['installed']}→{u['latest']}" for u in ups)
         print(f"プラグイン更新あり（前回チェック: {ago}）: {body}。適用: /update-plugins")
     elif errs:
-        print(f"⚠ プラグイン更新チェック: 前回（{ago}）一部失敗: " + "; ".join(errs))
+        print(f"⚠ プラグイン更新チェック: 前回（{ago}）一部失敗: " + "; ".join(errs) + "。今すぐ再チェック: /update-plugins")
     else:
         print(f"✓ プラグイン更新チェック: 前回（{ago}）実施・更新なし（TTL {ttl}h 内のため再チェックせず）")
 PY
@@ -91,7 +95,7 @@ def finish(updates, checked):
     else:
         parts.append(f"✓ プラグイン更新チェック完了: {checked} プラグインすべて最新")
     if errors:
-        parts.append("⚠ 一部チェック失敗: " + "; ".join(errors))
+        parts.append("⚠ 一部チェック失敗: " + "; ".join(errors) + "。対処手順: /update-plugins")
     out = {"systemMessage": "\n".join(parts)}
     if ctx:
         out["hookSpecificOutput"] = {"hookEventName": "SessionStart", "additionalContext": ctx}
