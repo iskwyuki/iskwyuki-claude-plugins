@@ -43,9 +43,9 @@ if age < ttl_eff * 3600:
     ago = f"{h}時間{m}分前" if h else f"{m}分前"
     if ups:
         body = ", ".join(f"{u['plugin']} {u['installed']}→{u['latest']}" for u in ups)
-        print(f"プラグイン更新あり（前回チェック: {ago}）: {body}。適用: /update-plugins")
+        print(f"プラグイン更新あり（前回チェック: {ago}）: {body}。適用: /iskwyuki-claude-plugins:update-plugins")
     elif errs:
-        print(f"⚠ プラグイン更新チェック: 前回（{ago}）一部失敗: " + "; ".join(errs) + "。今すぐ再チェック: /update-plugins")
+        print(f"⚠ プラグイン更新チェック: 前回（{ago}）一部失敗: " + "; ".join(errs) + "。今すぐ再チェック: /iskwyuki-claude-plugins:update-plugins")
     else:
         print(f"✓ プラグイン更新チェック: 前回（{ago}）実施・更新なし（TTL {ttl}h 内のため再チェックせず）")
 PY
@@ -88,14 +88,14 @@ def finish(updates, checked):
     ctx = None
     if updates:
         lines = "\n".join(f"  - {u['plugin']}: {u['installed']} → {u['latest']}" for u in updates)
-        parts.append(f"プラグインに更新があります:\n{lines}\n適用: /update-plugins（反映には再起動が必要）")
+        parts.append(f"プラグインに更新があります:\n{lines}\n適用: /iskwyuki-claude-plugins:update-plugins（反映には再起動が必要）")
         ctx = ("インストール済み Claude Code プラグインに更新があります: "
                + "; ".join(f"{u['plugin']} {u['installed']}→{u['latest']}" for u in updates)
                + "。ユーザーが更新を望んだ場合は update-plugins skill の手順に従うこと。")
     else:
         parts.append(f"✓ プラグイン更新チェック完了: {checked} プラグインすべて最新")
     if errors:
-        parts.append("⚠ 一部チェック失敗: " + "; ".join(errors) + "。対処手順: /update-plugins")
+        parts.append("⚠ 一部チェック失敗: " + "; ".join(errors) + "。対処手順: /iskwyuki-claude-plugins:update-plugins")
     out = {"systemMessage": "\n".join(parts)}
     if ctx:
         out["hookSpecificOutput"] = {"hookEventName": "SessionStart", "additionalContext": ctx}
