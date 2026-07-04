@@ -40,4 +40,4 @@
 | 3.1 | pr-review-loop の初実走と誤修正率の計測。実 PR で回し、false-fix 率を見て条件付き自動マージ（CI green ＋ 検証済み Critical ゼロ ＋ 収束）への昇格を判断 [tdd:skip:docs-only] | 実 PR 3 件で実走し、各回の指摘数・棄却数・誤修正数が記録され、昇格判断が文書化されている | 2.1 | cc:TODO |
 | 3.2 | 目視 DoD の自動化（portfolio）。Playwright 最小 smoke: 主要ページのコンソールエラー・ハイドレーション警告検知＋テーマ切替 [tdd:required] | pnpm スクリプト 1 本で smoke が実行でき、ハイドレーション警告を意図的に仕込むと fail することを確認済み | - | cc:完了 [8d46e90] |
 | 3.3 | 定期運転の設定。harvest-lessons の月次実行と基準レビューセット比較の定期化（2026-07-02 確定: **会社リポジトリの定期取得は恒久禁止**〔アクセスは資産作成フェーズ限りの特別許可で終了〕。対象は個人リポジトリのみ。実装は scripts/quality-monthly.sh ＋ NAS systemd user timer 毎月1日 09:57、レポートは NAS の .claude/state/monthly-reports/） [tdd:skip:docs-only] | schedule が登録され初回実行が確認されている | 1.1, 1.3 | cc:完了 [2114f4f] |
-| 3.4 | 運用ドキュメント整備。モデル運用方針・レビュー方針・マージ方針を docs へ（2.1 の確定内容を反映） [tdd:skip:docs-only] | docs がマージされ、CLAUDE.md からの参照が貼られている | 2.1 | cc:WIP |
+| 3.4 | 運用ドキュメント整備。モデル運用方針・レビュー方針・マージ方針を docs へ（2.1 の確定内容を反映） [tdd:skip:docs-only] | docs がマージされ、CLAUDE.md からの参照が貼られている | 2.1 | cc:完了 [cea99b3] |
