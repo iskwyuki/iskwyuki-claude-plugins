@@ -100,6 +100,7 @@ rsync -av "$PLUGIN_ROOT/assets/<type>/" ./.claude/<type>/
 - ファイル書き込み・配線の前に AskUserQuestion で確認する（Step 5 の asset 同期と同じ同意ポスチャ。書き込む内容・変更対象ファイルを提示してから実行）
 - 配線は git ネイティブ層（`core.hooksPath`）に行う。Claude 経由・手動を問わず、すべてのコミットに適用させるため
 - 緊急回避は `git commit --no-verify`（原則使わない）
+- **prepare 方式の構造的限界**（fresh clone × install 前コミット、2026-07-04 追記）: `core.hooksPath` は `pnpm install`（= prepare）で初めて設定される。clone 直後に install せずコミットすると、フック未配線でゲートが**無音で素通り**する（husky / lefthook も同様）。完了報告と README/SETUP に「clone 後まず install」を明記し、CI 側では別途チェックを回して二重防御とする（フック配線に品質を全依存させない）
 
 #### 構成検出と prepare 配線
 
@@ -107,17 +108,19 @@ rsync -av "$PLUGIN_ROOT/assets/<type>/" ./.claude/<type>/
 
 | マーカー | 種別 | prepare 配線 |
 |---|---|---|
-| `package.json` | Node 系 | `scripts.prepare` に `git config core.hooksPath .githooks` を設定（既存の prepare が husky / lefthook 等のフックマネージャなら原則によりスキップ。それ以外の prepare は `既存コマンド && git config core.hooksPath .githooks` で連結） |
+| `package.json` | Node 系 | `scripts.prepare` に `git config core.hooksPath .githooks \|\| true` を設定（既存の prepare が husky / lefthook 等のフックマネージャなら原則によりスキップ。それ以外の prepare は `既存コマンド && (git config core.hooksPath .githooks \|\| true)` で連結） |
 | `pyproject.toml` | Python 系 | prepare 相当がないため `git config core.hooksPath .githooks` を直接実行し、README（無ければ CONTRIBUTING.md 等の既存セットアップ文書、それも無ければ README を新規作成）に同コマンドを 1 行追記 |
 | `Cargo.toml` | Rust 系 | 同上（cargo に prepare 相当なし） |
 | いずれもなし | - | スキップし、skip 理由を完了報告に含める |
 
+> **`|| true` ガードの理由**（2026-07-04 追加、Antenna 展開レビューで検出）: `prepare` は `pnpm install --frozen-lockfile` で必ず走る。Dockerfile の deps ステージ（`.git` を COPY せず git バイナリも無い alpine 等）や一部 CI では `git config core.hooksPath` が exit 128/127 で失敗し、`pnpm install` 全体を落として**本番ビルドを破壊する**。`|| true` で git/`.git` 不在時は no-op にし、開発マシンでは従来どおり配線する。トレードオフとして配線失敗も無音化するが、フック不在＝ゲート未適用は fresh clone でも起きる（下記注記）ため、install を壊さない側を優先する。
+
 #### 共通チェックリスト（全種別、生成から配線まで）
 
 - [ ] 既存フック機構の検出。次のいずれかが**検出されたらスキップして報告**する: `git config core.hooksPath` が設定済み / `.husky/` がある / `scripts.prepare`・`scripts.postinstall` に husky・lefthook 等がある / `lefthook.yml`（`.lefthook.yml` 含む）がある / `.git/hooks` に sample 以外の有効なフックがある / 既存の `.githooks/pre-commit` がある（上書きしない）。どれも検出されない場合のみ生成に進む
-- [ ] 冪等性: 既存の prepare / hooksPath が本規約そのもの（`git config core.hooksPath .githooks`）の場合は導入済みとして何も変更しない（同一コマンドを連結して重複させない）
+- [ ] 冪等性: 既存の prepare / hooksPath が本規約そのもの（`git config core.hooksPath .githooks`、末尾 `|| true` の有無は問わない）の場合は導入済みとして何も変更しない（同一コマンドを連結して重複させない）。旧形（`|| true` なし）で配線済みのリポジトリを再 bootstrap した場合も二重配線しない
 - [ ] 採用する段が 1 つ以上あること。チェックリストで全段が省かれた場合は**ゲート生成自体をスキップ**する（echo だけの形骸ゲートと無意味な prepare 変更を作らない）
-- [ ] 生成後に `chmod +x .githooks/pre-commit`（実行権限が無いと git はフックを黙って無視する）
+- [ ] 生成後に `chmod +x .githooks/pre-commit`（実行権限が無いと git はフックを黙って無視する）。続けて `git update-index --add --chmod=+x .githooks/pre-commit` で **git tree object の mode を 100755 に確定**する。FS 上の実行ビットを 777 で誤表示する環境（一部のマウント）では `chmod +x` だけだと tree に非実行（100644）で記録され、通常環境への fresh clone でフックが黙って skip される。commit 後に `git ls-tree HEAD .githooks/pre-commit` が `100755` を返すことを確認する
 - [ ] **配線前に** `sh .githooks/pre-commit` を 1 回実行し、現状のツリーで PASS することを確認する。実行前に依存が導入済みか確認し（Node の `node_modules` 等）、未導入なら先に install してから dry-run する。コマンド不在（exit 127）は品質 fail ではなく前提未充足として扱い、install 後に再実行する。実際のチェック fail の場合は配線せず、fail 内容を報告して手動判断に委ねる（fail するゲートを配線すると直後の初回同期コミット自体が通らなくなる）
 - [ ] 検証: Python / Rust 系（`git config` 直接配線）は配線直後に `git config core.hooksPath` が `.githooks` を返すこと。Node 系は prepare 経由のため install / prepare 実行後に確認する（配線直後に未設定なのは失敗ではない。Node チェックリスト参照）
 
