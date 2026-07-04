@@ -6,3 +6,4 @@ out/
 
 # harness の並列 Worker 用ランタイム worktree（docs/breezing-safety.md 参照）
 .harness-worktrees/
+.claude/worktrees/
