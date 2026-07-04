@@ -1,5 +1,7 @@
 # iskwyuki-claude-plugins
 
+📐 **[配布ハーネスの設計図（インタラクティブ）](https://claude.ai/code/artifact/9b06eaf4-9178-4bbd-a7a7-c5c4e0b6f0ba)** — 配信元→bootstrap→各リポジトリの流れ・適用マトリクス・資産インベントリ・現在地を視覚的にまとめたページ。
+
 iskwyuki 個人用 Claude Code アセットの配信基盤。
 
 複数リポジトリで共通利用する skills / agents / (将来的な) hooks / commands を中央管理し、Claude Code の Plugin Marketplace 機構で継続配信します。
