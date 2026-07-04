@@ -25,7 +25,7 @@
 ## 統合方針
 
 - **統合は常に PR ブランチ経由**。main への直接コミットは Plans.md 等の運用ステータス更新のみ許可
-- **main への直 cherry-pick は禁止**。breezing の Lead は cherry-pick 前にコミット分離を機械検証し、PR を作って統合する（worktree 衝突対策、Plans.md 2.4 で文書化）
+- **main への直 cherry-pick は禁止**。breezing の Lead は cherry-pick 前にコミット分離を機械検証し、PR を作って統合する（worktree 衝突対策の詳細: [breezing-safety.md](breezing-safety.md)）
 - セルフマージは「DoD 充足・構文検証・機密分離」の自己点検を通過した場合のみ（2026-06-14 確立）
 
 ## 関連
