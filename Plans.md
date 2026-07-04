@@ -41,3 +41,23 @@
 | 3.2 | 目視 DoD の自動化（portfolio）。Playwright 最小 smoke: 主要ページのコンソールエラー・ハイドレーション警告検知＋テーマ切替 [tdd:required] | pnpm スクリプト 1 本で smoke が実行でき、ハイドレーション警告を意図的に仕込むと fail することを確認済み | - | cc:完了 [8d46e90] |
 | 3.3 | 定期運転の設定。harvest-lessons の月次実行と基準レビューセット比較の定期化（2026-07-02 確定: **会社リポジトリの定期取得は恒久禁止**〔アクセスは資産作成フェーズ限りの特別許可で終了〕。対象は個人リポジトリのみ。実装は scripts/quality-monthly.sh ＋ NAS systemd user timer 毎月1日 09:57、レポートは NAS の .claude/state/monthly-reports/） [tdd:skip:docs-only] | schedule が登録され初回実行が確認されている | 1.1, 1.3 | cc:完了 [2114f4f] |
 | 3.4 | 運用ドキュメント整備。モデル運用方針・レビュー方針・マージ方針を docs へ（2.1 の確定内容を反映） [tdd:skip:docs-only] | docs がマージされ、CLAUDE.md からの参照が貼られている | 2.1 | cc:完了 [cea99b3] |
+
+## Phase 4: 効果エビデンスの継続取得（recall 証明 ＋ 効果ログ）
+
+**背景（2026-07-04 確定）**: Phase 1-3 で「配管が動く」ことは実証したが、初期化の核心「弱いモデル＋資産＝Fable 級品質」の定量証明は未達。物差し（1.1）は会社ケース 12＋公開ケース 1（PF-1）で構築され検出率 61.5%（Fable 5・2026-06-13）を得たが、会社ケースは 2026-07-02 に恒久凍結され再走不能、公開は実質 1 件で recall の継続証明基盤が痩せている。
+
+**方針（2 本立て）**:
+- **Track A（recall 証明・ground-truth ベース）**: 物差しの再走で「モデル交代時の検出率」を測る。初期証明は会社 12 ケースの**本日限りの単発再許可**で取得（恒久の定期取得禁止は維持。これは 3.3 の禁止に対する初期 baseline 比較のための一度きり例外）。以後の継続は公開ケースのみ ── ゆえに公開ケースの蓄積が必須。
+- **Track B（効果ログ・real-usage テレメトリ）**: 資産の実行時に**決定的な発火点（pre-commit ゲート＝シェル）を主**として構造化ログを emit し、生ログは `.claude/state/`（非コミット）に、**サニタイズ集計値のみ**を本リポジトリで能動的に都度取得。recall（正解基準）とは別に「実作業での実捕捉」を継続証明する。
+- **反映**: Artifact ページは CSP でライブ不可のため、集計更新時に「日付つき測定値」として手動再デプロイ。現在地を「recall 定量証明」＋「効果ログ累積」の 2 本立てへ書き換える。
+
+**推奨着手順**: 4.1（本日・最優先／アクセス時限）→ 4.4 → 4.2 → 4.5 → 4.3 → 4.6
+
+| Task | 内容 | DoD | Depends | Status |
+|------|------|-----|---------|--------|
+| 4.1 | **【本日限り・最優先・会社アクセス時限】** recall 初期定量証明。`~/dev/quality-baseline-private/` の会社 12 ケース（CO-1..CO-12）の導入コミット diff を gh(SSO/ワンショット)で取得し、非 Fable モデル（最低 1: 強＝Opus 4.8、可能なら弱＝Sonnet/Haiku で degradation を bracket）で **baseline-protocol v1 厳守**（blind subagent・観点 2 agent 縮約・導入コミット後の履歴/PR/Issue 参照禁止・検証パスは採点側）で再走 → 4 区分採点 → Fable 61.5% と検出率比較。会社側は read-only・clone なし・痕跡残さない（1.1/1.4 と同運用）。恒久の定期取得禁止（3.3）は維持し、これは初期 baseline 比較のための単発例外 [tdd:skip:docs-only] | `results/2026-07-04-<model>-assets-0.10.1.md` に 12 ケース判定＋集計（検出率・部分込み・難易度別・カテゴリ別）が記録され、Fable baseline との比較が本リポジトリにコミット。サニタイズ検証（公開 results に固有名 0 件・SHA 0 件・コード 0 件）を明記。**本日中に実行**（アクセス失効前） | - | cc:TODO |
+| 4.2 | 公開ケースの蓄積。個人リポジトリ（portfolio / Antenna / tech-blog / keiba 等）のバグ修正履歴から PF-2〜PF-N を選定基準（実装バグ限定・linter/型チェッカーで機械検出可能なもの除外・5 カテゴリ×難易度分散・導入 SHA＋親 SHA 記録）に沿って新規構築。公開ゆえ raw diff も `cases/` に含めてよい。以後の継続 recall 比較の土台 [tdd:skip:docs-only] | `cases/` に PF-* が計 8 件以上（既存 PF-1 含む）、INDEX.md 更新、各ケース SHA 記録で再現可能 | - | cc:TODO |
+| 4.3 | 公開ケースでの継続 recall 計測。4.2 の公開セットに現行モデル（強・弱）を baseline-protocol v1 で流し `results/` に記録、3.3 の月次ジョブへ配線（会社禁止のまま公開のみ対象） [tdd:skip:docs-only] | 公開ケースでの現行モデル baseline が `results/` にあり、月次再走が 3.3 に組み込まれ初回実行が確認されている | 4.2 | cc:TODO |
+| 4.4 | 効果ログのスキーマ確定＋決定的 emit。JSONL スキーマ（timestamp / tool / model / repo_bucket(サニタイズ) / diff_size_bucket / findings{critical,warning,info} / verified_confirmed / refuted / gate{type,blocked,reason_category}）を確定。**pre-commit ゲート（シェル＝決定的）に blocked 記録**を追加し、`/code-review`・`/pr-review-loop` は末尾で `scripts/log-effect.sh` を呼ぶ（LLM に JSON 手書きさせない）。生ログは `.claude/state/harness-telemetry/*.jsonl`（gitignore 済み・非コミット） [tdd:required] | ゲート発火・code-review・pr-review-loop 実行で `.claude/state` に 1 行追記される（決定的経路＝ゲートは実測確認）。配信 asset 変更につき plugin.json version bump | - | cc:TODO |
+| 4.5 | 効果ログの収穫＋サニタイズ集計。収穫スクリプト（3.3 拡張 or 新規）が各リポジトリの生ログを読み集計し、`docs/effect-log/YYYY-MM.md` に**集計値のみ**コミット。サニタイズ検証（固有名 / SHA / 指摘本文 0 件を機械 grep）をコミット前ゲートにする [tdd:skip:docs-only] | `docs/effect-log/` に初回集計（ゲート阻止回数・重大度別検出量・誤修正率・モデル別内訳）が入り、サニタイズ検証済み（固有名 0 件）が明記 | 4.4 | cc:TODO |
+| 4.6 | Artifact ページを 2 本立てに更新。「現在地」を「recall 定量証明（4.1 会社初期＋4.3 公開継続）」と「効果ログ累積（4.5）」に書き換え、集計由来の数値で同 URL に再デプロイ。物差し凍結の経緯と、更新方式（手動・日付つき測定値・CSP でライブ不可）を正直に注記 [tdd:skip:docs-only] | 同 URL に再デプロイされ、recall 比較表（モデル×検出率）と効果ログ集計が反映、更新方式が明記されている | 4.1, 4.5 | cc:TODO |
