@@ -118,7 +118,7 @@ rsync -av "$PLUGIN_ROOT/assets/<type>/" ./.claude/<type>/
 #### 共通チェックリスト（全種別、生成から配線まで）
 
 - [ ] 既存フック機構の検出。次のいずれかが**検出されたらスキップして報告**する: `git config core.hooksPath` が設定済み / `.husky/` がある / `scripts.prepare`・`scripts.postinstall` に husky・lefthook 等がある / `lefthook.yml`（`.lefthook.yml` 含む）がある / `.git/hooks` に sample 以外の有効なフックがある / 既存の `.githooks/pre-commit` がある（上書きしない）。どれも検出されない場合のみ生成に進む
-- [ ] 冪等性: 既存の prepare / hooksPath が本規約そのもの（`git config core.hooksPath .githooks`）の場合は導入済みとして何も変更しない（同一コマンドを連結して重複させない）
+- [ ] 冪等性: 既存の prepare / hooksPath が本規約そのもの（`git config core.hooksPath .githooks`、末尾 `|| true` の有無は問わない）の場合は導入済みとして何も変更しない（同一コマンドを連結して重複させない）。旧形（`|| true` なし）で配線済みのリポジトリを再 bootstrap した場合も二重配線しない
 - [ ] 採用する段が 1 つ以上あること。チェックリストで全段が省かれた場合は**ゲート生成自体をスキップ**する（echo だけの形骸ゲートと無意味な prepare 変更を作らない）
 - [ ] 生成後に `chmod +x .githooks/pre-commit`（実行権限が無いと git はフックを黙って無視する）。続けて `git update-index --add --chmod=+x .githooks/pre-commit` で **git tree object の mode を 100755 に確定**する。FS 上の実行ビットを 777 で誤表示する環境（一部のマウント）では `chmod +x` だけだと tree に非実行（100644）で記録され、通常環境への fresh clone でフックが黙って skip される。commit 後に `git ls-tree HEAD .githooks/pre-commit` が `100755` を返すことを確認する
 - [ ] **配線前に** `sh .githooks/pre-commit` を 1 回実行し、現状のツリーで PASS することを確認する。実行前に依存が導入済みか確認し（Node の `node_modules` 等）、未導入なら先に install してから dry-run する。コマンド不在（exit 127）は品質 fail ではなく前提未充足として扱い、install 後に再実行する。実際のチェック fail の場合は配線せず、fail 内容を報告して手動判断に委ねる（fail するゲートを配線すると直後の初回同期コミット自体が通らなくなる）
