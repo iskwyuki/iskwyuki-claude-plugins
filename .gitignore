@@ -8,3 +8,7 @@ out/
 .harness-worktrees/
 .claude/worktrees/
 .claude/settings.local.json
+
+# 配信元 repo のドッグフーディング用 symlink（.claude/skills → assets/skills）。
+# assets/ が SSOT。派生物なので追跡しない
+.claude/skills
