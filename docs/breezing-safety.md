@@ -65,17 +65,15 @@ git worktree add -b "work/<task-id>-${ts}" ".claude/worktrees/<task-id>-${ts}"
 
 ## upstream 報告の判断（Plans.md 2.4 DoD）
 
-**判断: 報告を実施する**（2026-07-04。報告先: [Chachamaru127/claude-code-harness](https://github.com/Chachamaru127/claude-code-harness)）。
+**判断: 投稿は見送る**（2026-07-04）。報告先候補は [Chachamaru127/claude-code-harness](https://github.com/Chachamaru127/claude-code-harness)、issue 文面は準備済み（未投稿）。
 
-根拠:
+見送りの理由:
 
-1. 現行版（4.16.4）でも再現することを実測で確認済み（上表）
-2. 根本原因は worktree 割当の粒度（セッション単位）にあり、利用側の運用では緩和はできても解消できない
-3. upstream 自身も非 claude backend（cursor / codex）ではタスク単位の一意 worktree（`<task>-<timestamp>-<PID>`）を採用しており、claude backend の Worker 経路だけが取り残されている — 修正方針の提案として成立する
+- **実測で確認できたのは「共有」まで**。並列 `isolation:"worktree"` エージェントが同一 worktree・同一ブランチ（session 単位）に着地することは再現済み（上表）。だが**「コミットへの他タスクファイル混入」という実害は本セッションでは再現していない**（根拠は 2026-06-11 の観測メモリのみで、そのときも Worker の self_review が検出・自己回復した）。
+- worktree の**再利用は hook の意図的な設計**（"Reuse a valid existing worktree"）であり、共有それ自体はバグと断定できない。
+- breezing の標準フローは Worker を**逐次実行**するため、そもそも同時に index を触らない。混入が起きうるのは `--parallel N` の同時実行に限られ、その実害は未再現。
 
-報告状況は本節に追記する（実施記録: 下記）。
-
-- 2026-07-04: issue 文面を準備。投稿はユーザー確認後に実施し、URL をここに追記する
+以上より、実害を再現せずに公開 issue（バグ報告）を出すのは誤報リスクがあると判断し、投稿を見送った。利用側の緩和策（本書の Lead 手順）で運用上は十分カバーできる。将来 `--parallel` で実際の混入を再現できたら、その証跡を添えてバグ報告として再検討する。
 
 ## 関連
 
