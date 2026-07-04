@@ -9,7 +9,7 @@
 | 計画・実行規律 | **harness**（harness-plan / harness-work / breezing） | Plan→Work→Review のサイクル管理、Plans.md のマーカー運用 |
 | サイクル内の verdict ゲート | **harness**（harness-review / reviewer agent） | 実行規律の一部として harness 側に残す。APPROVE / REQUEST_CHANGES の判定はここ |
 | 人が明示的に呼ぶレビュー | **自前 `/code-review`**（lite / standard / full） | 全件報告＋検証パス。レビューの「中身」の品質は自前資産で磨く |
-| PR 単位の自律レビュー | **自前 `/pr-review-loop`** | レビュー→検証→修正→再レビューのループ。マージは 3.1 の誤修正率計測が完了するまで手動を維持 |
+| PR 単位の自律レビュー | **自前 `/pr-review-loop`** | レビュー→検証→修正→再レビューのループ。マージは手動を維持（第 1 ラウンド計測で昇格見送り。[pr-review-loop-metrics.md](pr-review-loop-metrics.md)） |
 | レビュー品質の計測 | **自前 docs/quality-baseline/** | モデル・資産変更時の検出率比較（baseline-protocol v1） |
 
 ## 重複 skill の処遇

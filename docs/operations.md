@@ -35,7 +35,7 @@
 - **統合は常に PR ブランチ経由**。main への直接コミットは Plans.md 等の運用ステータス更新に限る（直 cherry-pick 禁止）。
 - **セルフマージ**は「DoD 充足・構文検証・機密分離（会社固有情報が公開ファイルに無い）」の自己点検を通過した場合のみ。
 - breezing の並列 Worker 取り込みは、Lead が cherry-pick 前にコミット分離を機械検証する（[breezing-safety.md](breezing-safety.md)）。
-- **条件付き自動マージ**（CI green ＋ 検証済み Critical ゼロ ＋ 収束）への昇格は、pr-review-loop の誤修正率計測（Plans.md 3.1）の結果を見て判断する。計測が済むまでマージは手動を維持する。
+- **条件付き自動マージ**（CI green ＋ 検証済み Critical ゼロ ＋ 収束）への昇格は、pr-review-loop の誤修正率計測（Plans.md 3.1）の結果を見て判断する。第 1 ラウンドの計測（full 3 件・誤修正率 0%）では**昇格を見送り手動を維持**と判断した（[pr-review-loop-metrics.md](pr-review-loop-metrics.md) 参照。アプリケーションコードでの実績が出るまで継続計測）。
 
 ## 関連
 

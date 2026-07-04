@@ -7,4 +7,4 @@
 - 会社リポジトリ由来の固有情報（リポジトリ名・SHA・コード）はコミットしない。ローカル manifest（`~/dev/quality-baseline-private/`）のみに記録
 - **`git add -A` / `git add .` は禁止。コミットは明示パス指定のみ**（ランタイム状態ファイルの公開混入事故 2026-06-14 の再発防止。`.claude/state/` 等は .gitignore 済みだが二重防御とする）
 
-詳細: [docs/operations.md](docs/operations.md)（モデル・レビュー・マージ方針） / [docs/role-division.md](docs/role-division.md) / [docs/breezing-safety.md](docs/breezing-safety.md) / [docs/quality-baseline/README.md](docs/quality-baseline/README.md)
+詳細: [docs/operations.md](docs/operations.md)（モデル・レビュー・マージ方針） / [docs/role-division.md](docs/role-division.md) / [docs/breezing-safety.md](docs/breezing-safety.md) / [docs/pr-review-loop-metrics.md](docs/pr-review-loop-metrics.md)（自動マージ昇格判断） / [docs/quality-baseline/README.md](docs/quality-baseline/README.md)
