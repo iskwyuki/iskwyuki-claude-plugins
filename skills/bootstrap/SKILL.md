@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: iskwyuki-claude-plugins の初回セットアップ skill。Plugin install 直後に Skill tool 経由で呼び出し、SETUP.md を提示してからプロジェクトの .claude/ に全 asset を初回展開し、品質ゲート（.githooks/pre-commit）をリポジトリ構成に合わせて生成する。
+description: iskwyuki-claude-plugins の初回セットアップ skill。Plugin install 直後に Skill tool 経由で呼び出し、SETUP.md を提示してからプロジェクトの .claude/ に全 asset を初回展開し、harness ランタイムパスを .gitignore へ冪等登録し、品質ゲート（.githooks/pre-commit）をリポジトリ構成に合わせて生成する。
 ---
 
 # bootstrap
@@ -89,7 +89,62 @@ rsync -av "$PLUGIN_ROOT/assets/<type>/" ./.claude/<type>/
 
 これにより、このリポジトリを開いた別環境でも marketplace 追加とプラグイン有効化（依存の claude-code-harness を含む）がプロンプト一発で再現される。
 
-### Step 7: 品質ゲート（pre-commit）の展開
+### Step 7: ランタイムパスの `.gitignore` 登録
+
+harness が生成する**ランタイム／エフェメラルなパス**（テレメトリ・セッション・worktree・ローカル設定）は git 追跡対象外前提で emit される。消費側 repo の `.gitignore` に冪等登録し、`git add`（特に `-A`）でランタイム状態が公開混入する事故（2026-06-14 の混入事故と同型）を予防する。
+
+#### 対象パス（harness ランタイム／エフェメラルのみ）
+
+以下の固定リストのみを対象とする。**追跡対象の asset（配信された `.claude/skills/` `.claude/agents/` 等、`.githooks/`、コミット意図のある `.claude/agent-memory/`）は絶対に含めない。**
+
+```
+.claude/state/
+.claude/sessions/
+.claude/worktrees/
+.harness-worktrees/
+.claude/settings.local.json
+```
+
+- `.claude/memory/` は既定では追加しない（harness-mem を追跡したい構成があるため）。ユーザーが「メモリはコミットしない」と明言した場合のみ、追加候補に含めてよいか確認する。
+
+#### 手順
+
+1. 差分検出。`.gitignore` が無ければ新規作成（`touch`）し、対象パスのうち**完全一致で未登録のものだけ**を追加候補 `TO_ADD` にする（既存行は再追加しない＝冪等）。
+
+```bash
+touch .gitignore
+TO_ADD=""
+while IFS= read -r e; do
+  [ -z "$e" ] && continue
+  grep -qxF "$e" .gitignore || TO_ADD="${TO_ADD}${e}
+"
+done <<'EOF'
+.claude/state/
+.claude/sessions/
+.claude/worktrees/
+.harness-worktrees/
+.claude/settings.local.json
+EOF
+printf '%s' "$TO_ADD"   # 追加候補（空なら登録済み＝何もしない）
+```
+
+2. `TO_ADD` が空なら全エントリ登録済み。何も書かずに次の Step へ進む。
+
+3. 追加候補がある場合は **AskUserQuestion で追加予定エントリを提示して同意を取る**（Step 5 の asset 同期と同じ同意ポスチャ）。既存の `.gitignore` エントリは削除・並べ替えしない。
+
+4. 同意後、見出しコメント（未登録時のみ）と追加候補を追記する。各行は完全一致判定で冪等なので、再 bootstrap しても重複行は生じない。
+
+```bash
+HEADER="# iskwyuki-claude-plugins: harness ランタイム状態（git 追跡対象外）"
+if [ -n "$TO_ADD" ]; then
+  grep -qxF "$HEADER" .gitignore || printf '\n%s\n' "$HEADER" >> .gitignore
+  printf '%s' "$TO_ADD" >> .gitignore
+fi
+```
+
+5. 検証: `git status --porcelain .claude/state/ .claude/sessions/` にランタイムファイルが現れないこと。再実行しても `TO_ADD` が空になり重複行が生じないことを確認する。
+
+### Step 8: 品質ゲート（pre-commit）の展開
 
 「`.githooks/pre-commit` ＋ package manager の prepare 配線」規約（portfolio で実証済み）を、リポジトリ構成を検出して展開する。
 
@@ -204,15 +259,16 @@ Rust チェックリスト（共通チェックリストに追加で）:
 - portfolio（Node / pnpm）: lint ＋ `tsc --noEmit` の 2 段ゲート。`prepare` 配線により clone 直後の install で自動有効化（2026-06 実証）
 - アンチパターン: 未設定ツールをゲートに入れると初回コミットから fail し、`--no-verify` が常態化してゲートが形骸化する
 
-### Step 8: 完了報告
+### Step 9: 完了報告
 
-- Step 7 で**実際に変更したパスだけ**を列挙して確認・ステージを案内する（存在しないパスを `git add` に含めると fatal になり何もステージされない）
+- Step 7・Step 8 で**実際に変更したパスだけ**を列挙して確認・ステージを案内する（存在しないパスを `git add` に含めると fatal になり何もステージされない）
   - 常に対象: `.claude/`
+  - `.gitignore` にランタイムパスを追記した場合のみ: `.gitignore`
   - ゲートを生成した場合のみ: `.githooks/`
   - prepare を配線した場合のみ: `package.json`
   - セットアップ文書に追記した場合のみ: `README.md` 等の該当ファイル
-  - 例（Node 系フル構成）: `git status -- .claude/ .githooks/ package.json` → `git add .claude/ .githooks/ package.json`
-  - 例（ゲートをスキップした場合）: `git status -- .claude/` で差分を確認の上 `git add .claude/` のみ
+  - 例（Node 系フル構成）: `git status -- .claude/ .gitignore .githooks/ package.json` → `git add .claude/ .gitignore .githooks/ package.json`
+  - 例（ゲート・gitignore ともスキップした場合）: `git status -- .claude/` で差分を確認の上 `git add .claude/` のみ
 - `git commit -m "chore: iskwyuki-claude-plugins 初回同期"` を案内（`git add -A` は使わない）
 - 品質ゲートをスキップ・縮小した場合はその理由を報告に含める
 - 以降は `/pull-assets` と `/push-asset` が短縮名で利用可能になる旨を伝える
