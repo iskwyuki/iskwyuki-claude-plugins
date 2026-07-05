@@ -1,0 +1,509 @@
+<title>iskwyuki-claude-plugins — 配布ハーネスの設計図</title>
+<style>
+  :root {
+    /* Blueprint / instrument palette — light (schematic on paper) */
+    --ground: #EAF0F3;
+    --surface: #FFFFFF;
+    --surface-2: #F5F9FB;
+    --ink: #142430;
+    --muted: #5C6E7A;
+    --faint: #8496A2;
+    --line: #D0DDE4;
+    --line-strong: #B4C6D0;
+    --accent: #0C7A85;
+    --accent-bright: #0E9BA8;
+    --accent-soft: rgba(14, 155, 168, 0.10);
+    --accent-line: rgba(12, 122, 133, 0.32);
+    --pass: #23764C;
+    --pass-soft: rgba(35, 118, 76, 0.12);
+    --partial: #9A6512;
+    --partial-soft: rgba(154, 101, 18, 0.14);
+    --none: #A23F58;
+    --none-soft: rgba(162, 63, 88, 0.12);
+    --shadow: 0 1px 2px rgba(20,36,48,.05), 0 8px 24px -12px rgba(20,36,48,.18);
+    --grid-dot: rgba(20,36,48,.045);
+
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
+
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 36px; --s7: 56px; --s8: 84px;
+    --maxw: 1120px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0B1218;
+      --surface: #131E27;
+      --surface-2: #17242E;
+      --ink: #DBE7ED;
+      --muted: #8D9EAB;
+      --faint: #64757F;
+      --line: #26343F;
+      --line-strong: #33454F;
+      --accent: #2FBAC7;
+      --accent-bright: #48D3DF;
+      --accent-soft: rgba(47, 186, 199, 0.12);
+      --accent-line: rgba(72, 211, 223, 0.30);
+      --pass: #45C486;
+      --pass-soft: rgba(69, 196, 134, 0.14);
+      --partial: #DBA23E;
+      --partial-soft: rgba(219, 162, 62, 0.15);
+      --none: #E07D97;
+      --none-soft: rgba(224, 125, 151, 0.13);
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -16px rgba(0,0,0,.6);
+      --grid-dot: rgba(255,255,255,.035);
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #EAF0F3; --surface: #FFFFFF; --surface-2: #F5F9FB; --ink: #142430; --muted: #5C6E7A;
+    --faint: #8496A2; --line: #D0DDE4; --line-strong: #B4C6D0; --accent: #0C7A85; --accent-bright: #0E9BA8;
+    --accent-soft: rgba(14,155,168,.10); --accent-line: rgba(12,122,133,.32); --pass: #23764C; --pass-soft: rgba(35,118,76,.12);
+    --partial: #9A6512; --partial-soft: rgba(154,101,18,.14); --none: #A23F58; --none-soft: rgba(162,63,88,.12);
+    --shadow: 0 1px 2px rgba(20,36,48,.05), 0 8px 24px -12px rgba(20,36,48,.18); --grid-dot: rgba(20,36,48,.045);
+  }
+  :root[data-theme="dark"] {
+    --ground: #0B1218; --surface: #131E27; --surface-2: #17242E; --ink: #DBE7ED; --muted: #8D9EAB;
+    --faint: #64757F; --line: #26343F; --line-strong: #33454F; --accent: #2FBAC7; --accent-bright: #48D3DF;
+    --accent-soft: rgba(47,186,199,.12); --accent-line: rgba(72,211,223,.30); --pass: #45C486; --pass-soft: rgba(69,196,134,.14);
+    --partial: #DBA23E; --partial-soft: rgba(219,162,62,.15); --none: #E07D97; --none-soft: rgba(224,125,151,.13);
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -16px rgba(0,0,0,.6); --grid-dot: rgba(255,255,255,.035);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink); font-family: var(--sans);
+    font-size: 15px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+    background-image: radial-gradient(var(--grid-dot) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--s5); }
+  section { padding: var(--s7) 0; border-top: 1px solid var(--line); }
+  section:first-of-type { border-top: none; }
+
+  h1, h2, h3 { text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; margin: 0 0 var(--s3);
+    display: flex; align-items: center; gap: var(--s2);
+  }
+  .eyebrow::before { content: ""; width: 22px; height: 1px; background: var(--accent-line); }
+  p { margin: 0 0 var(--s3); max-width: 68ch; }
+  .muted { color: var(--muted); }
+  code, .mono { font-family: var(--mono); }
+  a { color: var(--accent); text-decoration-color: var(--accent-line); text-underline-offset: 3px; }
+
+  /* Theme toggle */
+  .theme-toggle {
+    position: fixed; top: var(--s4); right: var(--s4); z-index: 50;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .04em;
+    background: var(--surface); color: var(--muted); border: 1px solid var(--line);
+    border-radius: 999px; padding: 7px 14px; cursor: pointer; box-shadow: var(--shadow);
+    display: inline-flex; align-items: center; gap: 7px; transition: color .15s, border-color .15s;
+  }
+  .theme-toggle:hover { color: var(--accent); border-color: var(--accent-line); }
+  .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Hero */
+  .hero { padding-top: var(--s8); padding-bottom: var(--s7); }
+  .hero-meta { display: flex; flex-wrap: wrap; gap: var(--s2); margin-bottom: var(--s5); }
+  .chip {
+    font-family: var(--mono); font-size: 12px; padding: 4px 10px; border-radius: 6px;
+    background: var(--surface); border: 1px solid var(--line); color: var(--muted);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .chip b { color: var(--ink); font-weight: 600; }
+  .hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.08; font-weight: 780; }
+  .hero h1 .accent { color: var(--accent); }
+  .lede { font-size: clamp(16px, 2.2vw, 19px); color: var(--muted); max-width: 60ch; margin-top: var(--s4); }
+  .thesis {
+    margin-top: var(--s5); padding: var(--s4) var(--s5); border-left: 3px solid var(--accent);
+    background: var(--accent-soft); border-radius: 0 8px 8px 0; max-width: 66ch;
+  }
+  .thesis p { margin: 0; color: var(--ink); }
+  .thesis .k { font-family: var(--mono); font-size: 12.5px; color: var(--accent); text-transform: uppercase; letter-spacing: .12em; display:block; margin-bottom: 4px; }
+
+  /* Flow / pipeline */
+  .flow { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+  .tier {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: var(--s5); box-shadow: var(--shadow); position: relative;
+  }
+  .tier-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); flex-wrap: wrap; margin-bottom: var(--s4); }
+  .tier-tag { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); }
+  .tier h3 { font-size: 18px; font-weight: 700; }
+  .connector { display: flex; justify-content: center; align-items: center; height: 40px; }
+  .connector::before { content: ""; width: 2px; height: 100%; background: linear-gradient(var(--accent-line), var(--accent-line)); }
+  .connector span {
+    position: absolute; font-family: var(--mono); font-size: 11px; color: var(--accent);
+    background: var(--ground); padding: 2px 8px; border: 1px solid var(--accent-line); border-radius: 999px;
+  }
+  .conn-wrap { position: relative; display: flex; justify-content: center; }
+
+  .plugin-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+  @media (max-width: 640px){ .plugin-row { grid-template-columns: 1fr; } }
+  .plugin-card { border: 1px solid var(--line); border-radius: 9px; padding: var(--s4); background: var(--surface-2); }
+  .plugin-card .name { font-family: var(--mono); font-weight: 600; font-size: 14px; color: var(--ink); }
+  .plugin-card .tag { font-size: 11px; font-family: var(--mono); color: var(--accent); text-transform: uppercase; letter-spacing: .08em; }
+  .plugin-card.ext { border-style: dashed; }
+  .plugin-card p { font-size: 13px; margin: var(--s2) 0 0; color: var(--muted); }
+
+  .repo-chips { display: flex; flex-wrap: wrap; gap: var(--s2); }
+  .repo-chip {
+    font-family: var(--mono); font-size: 13px; padding: 7px 12px; border-radius: 7px; cursor: pointer;
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--ink);
+    display: inline-flex; align-items: center; gap: 8px; transition: border-color .15s, background .15s, transform .1s;
+  }
+  .repo-chip:hover { border-color: var(--accent-line); transform: translateY(-1px); }
+  .repo-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .dot.pass { background: var(--pass); } .dot.partial { background: var(--partial); } .dot.none { background: var(--none); } .dot.source { background: var(--accent); }
+
+  /* Matrix cards */
+  .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(258px, 1fr)); gap: var(--s3); }
+  .rcard {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 11px; padding: var(--s4);
+    box-shadow: var(--shadow); transition: border-color .2s, box-shadow .2s; scroll-margin-top: 80px;
+  }
+  .rcard.flash { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow); }
+  .rcard .top { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
+  .rcard .rname { font-family: var(--mono); font-weight: 600; font-size: 14px; display:flex; align-items:center; gap:8px; }
+  .badge { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; padding: 3px 7px; border-radius: 5px; white-space: nowrap; }
+  .badge.pass { background: var(--pass-soft); color: var(--pass); }
+  .badge.partial { background: var(--partial-soft); color: var(--partial); }
+  .badge.none { background: var(--none-soft); color: var(--none); }
+  .badge.source { background: var(--accent-soft); color: var(--accent); }
+  .rcard .flags { display: flex; gap: var(--s1); margin: var(--s3) 0; flex-wrap: wrap; }
+  .flag { font-family: var(--mono); font-size: 11px; padding: 2px 7px; border-radius: 5px; border: 1px solid var(--line); color: var(--faint); }
+  .flag.on { color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); }
+  .rcard .meta { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: var(--s3); margin-top: var(--s2); }
+  .rcard .meta b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .rcard .note { font-size: 12.5px; color: var(--muted); margin: var(--s3) 0 0; line-height: 1.5; }
+
+  /* Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: var(--s4); margin-top: var(--s4); font-size: 13px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 12px; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: var(--s1); flex-wrap: wrap; margin-bottom: var(--s5); border-bottom: 1px solid var(--line); }
+  .tab {
+    font-family: var(--mono); font-size: 13px; padding: 9px 15px; cursor: pointer; color: var(--muted);
+    background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; letter-spacing: .02em;
+  }
+  .tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .tab .ct { color: var(--faint); font-size: 11px; }
+  .asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--s3); }
+  .apanel[hidden] { display: none; }
+  .acard { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: var(--s4); }
+  .acard .an { font-family: var(--mono); font-weight: 600; font-size: 13.5px; color: var(--ink); }
+  .acard .an .slash { color: var(--accent); }
+  .acard p { font-size: 12.5px; color: var(--muted); margin: 6px 0 0; }
+
+  /* Governance list */
+  .gov { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--s3); }
+  .gcard { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent-line); border-radius: 8px; padding: var(--s4); }
+  .gcard .gf { font-family: var(--mono); font-size: 12.5px; color: var(--accent); }
+  .gcard h4 { margin: 4px 0 6px; font-size: 15px; font-weight: 650; }
+  .gcard p { font-size: 12.5px; color: var(--muted); margin: 0; }
+
+  /* Status / current standing */
+  .stand { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); }
+  @media (max-width: 720px){ .stand { grid-template-columns: 1fr; } }
+  .scol { border-radius: 12px; padding: var(--s5); border: 1px solid var(--line); background: var(--surface); }
+  .scol.proven { border-top: 3px solid var(--pass); }
+  .scol.open { border-top: 3px solid var(--partial); }
+  .scol.trackb { border-top: 3px solid var(--accent); }
+  .scol h3 { font-size: 16px; display: flex; align-items: center; gap: 9px; margin-bottom: var(--s3); }
+  .scol h3 .tk { font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 5px; letter-spacing: .06em; }
+  .scol.proven .tk { background: var(--pass-soft); color: var(--pass); }
+  .scol.open .tk { background: var(--partial-soft); color: var(--partial); }
+  .scol.trackb .tk { background: var(--accent-soft); color: var(--accent); }
+  .slist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--s3); }
+  .slist li { padding-left: 22px; position: relative; font-size: 13.5px; color: var(--ink); }
+  .slist li::before { position: absolute; left: 0; top: 1px; font-family: var(--mono); font-size: 13px; }
+  .scol.proven .slist li::before { content: "✓"; color: var(--pass); }
+  .scol.open .slist li::before { content: "○"; color: var(--partial); }
+  .scol.trackb .slist li::before { content: "▸"; color: var(--accent); }
+  .slist li b { font-variant-numeric: tabular-nums; }
+  .slist li span { color: var(--muted); }
+
+  /* Recall comparison table */
+  .rtable { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: var(--s2); }
+  .rtable th, .rtable td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--line); }
+  .rtable th { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); font-weight: 600; }
+  .rtable td { color: var(--ink); }
+  .rtable td.num, .rtable th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .rtable tbody tr:last-child td { border-bottom: none; }
+  .rtable tbody tr:last-child td.num { color: var(--accent); font-weight: 600; }
+
+  /* Phase progress */
+  .phases { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--s3); margin-top: var(--s5); }
+  @media (max-width: 720px){ .phases { grid-template-columns: 1fr; } }
+  .phase { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: var(--s4); }
+  .phase.active { border-color: var(--accent-line); background: var(--accent-soft); }
+  .phase .pn { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+  .phase h4 { font-size: 14px; margin: 4px 0 var(--s3); font-weight: 650; }
+  .bar { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--pass); border-radius: 999px; }
+  .phase .pc { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 7px; font-variant-numeric: tabular-nums; }
+
+  footer { padding: var(--s6) 0 var(--s7); border-top: 1px solid var(--line); color: var(--faint); font-size: 12.5px; font-family: var(--mono); }
+  .kv { display: flex; gap: var(--s5); flex-wrap: wrap; margin-bottom: var(--s5); }
+  .kv .item .n { font-family: var(--mono); font-size: 30px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1; }
+  .kv .item .l { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+
+<button class="theme-toggle" id="themeBtn" aria-label="テーマ切替">
+  <span id="themeIcon">◐</span><span id="themeLabel">theme</span>
+</button>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="hero-meta">
+      <span class="chip"><b>iskwyuki-claude-plugins</b></span>
+      <span class="chip">v<b>0.11.0</b></span>
+      <span class="chip">depends → <b>claude-code-harness</b></span>
+      <span class="chip">Plans.md <b>19/19</b> 完了</span>
+      <span class="chip">計測 <b>2026-07-05</b></span>
+    </div>
+    <div class="eyebrow">配布ハーネスの設計図</div>
+    <h1>個人リポジトリ群に<br><span class="accent">モデル非依存の開発品質</span>を配布する基盤</h1>
+    <p class="lede">1 つの配信元リポジトリが、skill・agent・hook・品質ゲートを marketplace 経由で各プロジェクトへ展開する。目的は「賢いモデルへの依存」を「焼き込まれた資産と検証構造」に置き換えること。</p>
+    <div class="thesis">
+      <p><span class="k">賭けの核心</span>Fable が使えなくなっても Fable 級のアウトプット品質を保つ。そのために、レビューの<b>観点</b>（rules・agents）と<b>検証構造</b>（全件報告＋実行での裏取り）を、モデルではなくリポジトリの資産として残す。</p>
+    </div>
+  </header>
+
+  <!-- FLOW -->
+  <section id="flow">
+    <div class="eyebrow">配布アーキテクチャ</div>
+    <h2 style="font-size:24px;font-weight:720;margin-bottom:var(--s3)">配信元から各リポジトリへ、どう流れるか</h2>
+    <p class="muted">marketplace が 2 つの plugin を束ね、bootstrap skill が各プロジェクトの <code>.claude/</code> に資産と品質ゲートを展開する。</p>
+
+    <div class="flow" style="margin-top:var(--s5)">
+      <div class="tier">
+        <div class="tier-head"><div><div class="tier-tag">Tier 1 · 配信元</div><h3>marketplace</h3></div><span class="mono muted" style="font-size:12px">.claude-plugin/marketplace.json</span></div>
+        <div class="plugin-row">
+          <div class="plugin-card">
+            <span class="tag">plugin · 自前</span>
+            <div class="name">iskwyuki-claude-plugins</div>
+            <p>bootstrap・update-plugins（native）＋ 配布資産（skills 14 / agents 4 / hooks）＋ ガバナンス docs</p>
+          </div>
+          <div class="plugin-card ext">
+            <span class="tag">plugin · 外部参照</span>
+            <div class="name">claude-code-harness</div>
+            <p>Chachamaru127 の計画→実行→レビュー ハーネス。依存として同梱、実行規律を担う</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="conn-wrap"><div class="connector"><span>bootstrap 実行</span></div></div>
+
+      <div class="tier">
+        <div class="tier-head"><div><div class="tier-tag">Tier 2 · 展開エンジン</div><h3>bootstrap skill</h3></div><span class="mono muted" style="font-size:12px">初回 1 回 / update-plugins で保守</span></div>
+        <div class="plugin-row" style="grid-template-columns:1fr 1fr 1fr">
+          <div class="plugin-card"><div class="name">① assets 展開</div><p>skills / agents を <code>.claude/</code> へ。プロジェクト固有 skill は保持</p></div>
+          <div class="plugin-card"><div class="name">② settings 宣言</div><p>marketplace 登録＋plugin 有効化を <code>settings.json</code> にマージ</p></div>
+          <div class="plugin-card"><div class="name">③ 品質ゲート生成</div><p>構成を検出して <code>.githooks/pre-commit</code> ＋ prepare 配線を生成</p></div>
+        </div>
+      </div>
+
+      <div class="conn-wrap"><div class="connector"><span>展開後は同期し続ける</span></div></div>
+
+      <div class="tier">
+        <div class="tier-head"><div><div class="tier-tag">Tier 3 · 適用先（定常状態）</div><h3>各プロジェクトの <code style="font-size:16px">.claude/</code></h3></div><span class="mono muted" style="font-size:12px">双方向に同期</span></div>
+        <p class="muted" style="margin:0 0 var(--s4);font-size:13.5px">展開は一度きりではない。着地後は配信元とプロジェクトの間で資産が双方向に流れ続ける ── これが「中央管理しつつ各所で磨く」の実体。</p>
+        <div class="plugin-row" style="grid-template-columns:1fr 1fr 1fr">
+          <div class="plugin-card"><div class="name"><span style="color:var(--accent)">←</span> /pull-assets</div><p>配信元の更新をプロジェクトへ取り込む</p></div>
+          <div class="plugin-card"><div class="name">/push-asset <span style="color:var(--accent)">→</span></div><p>プロジェクトで磨いた資産を配信元へ還元</p></div>
+          <div class="plugin-card"><div class="name">/update-plugins</div><p>plugin 本体の更新確認・適用・巻き戻し</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ASSETS -->
+  <section id="assets">
+    <div class="eyebrow">資産インベントリ</div>
+    <h2 style="font-size:24px;font-weight:720;margin-bottom:var(--s3)">配信元が配るもの</h2>
+    <div class="tabs" id="assetTabs" role="tablist"></div>
+    <div id="assetPanels"></div>
+  </section>
+
+  <!-- GOVERNANCE -->
+  <section id="gov">
+    <div class="eyebrow">ガバナンス文書</div>
+    <h2 style="font-size:24px;font-weight:720;margin-bottom:var(--s3)">運用ルールはどこに書かれているか</h2>
+    <p class="muted"><code>docs/</code> 配下に、モデル・レビュー・マージ・安全策・計測の方針が正本として置かれている。</p>
+    <div class="gov" id="govGrid" style="margin-top:var(--s5)"></div>
+  </section>
+
+  <!-- QUALITY GATE -->
+  <section id="gate">
+    <div class="eyebrow">品質ゲートの仕組み</div>
+    <h2 style="font-size:24px;font-weight:720;margin-bottom:var(--s3)">モデルに依存しない「機械の関所」</h2>
+    <p class="muted">pre-commit ゲートは、どのモデルがコードを書いても同じように機械的にバグを止める。ここがモデル非依存品質の中核。</p>
+    <div class="grid-cards" style="margin-top:var(--s5)">
+      <div class="rcard"><div class="rname mono">1 · 生成</div><p class="note">構成マーカー（package.json / pyproject.toml / Cargo.toml）を検出し、そのリポジトリで<b>現状 PASS するチェックだけ</b>を段に入れる（未設定ツールは入れない）。</p></div>
+      <div class="rcard"><div class="rname mono">2 · 配線</div><p class="note"><code>prepare</code> で <code>git config core.hooksPath .githooks || true</code>。<code>|| true</code> は git/.git 不在の Docker・CI で <code>install</code> を壊さないためのガード。</p></div>
+      <div class="rcard"><div class="rname mono">3 · 実行権限</div><p class="note"><code>git update-index --chmod=+x</code> で tree mode を <code>100755</code> に確定。非実行だと git がフックを<b>無音でスキップ</b>する。</p></div>
+      <div class="rcard"><div class="rname mono">4 · 発火</div><p class="note">全コミットで <code>tsc --noEmit</code> や <code>vitest</code> を実行。Claude 経由でも手動でも git ネイティブ層で必ず通る。</p></div>
+    </div>
+    <div class="thesis" style="margin-top:var(--s5);max-width:74ch">
+      <p><span class="k">今回のレビューが実際に捕まえた実害バグ</span>①exec-bit の tree 非実行記録でゲートが無音スキップ ②<code>prepare</code> が Docker で <code>pnpm install</code> を破壊 ③集計 docs 自身の算術矛盾。いずれも「モデルの賢さ」ではなく<b>実行での裏取り</b>（<code>git ls-tree</code> を叩く・非 git dir で <code>git config</code> を試す）で検出された ── これが狙っていたモデル非依存の検出構造。</p>
+    </div>
+  </section>
+
+  <!-- STANDING -->
+  <section id="standing">
+    <div class="eyebrow">この初期化の現在地</div>
+    <h2 style="font-size:24px;font-weight:720;margin-bottom:var(--s3)">2 本立ての現在地 ── recall 定量証明と効果ログ累積</h2>
+    <p class="muted">初期化の核心「弱いモデル＋資産＝Fable 級品質」を、正解基準の <b>recall（Track A）</b>と、実作業での <b>実捕捉（Track B）</b>の 2 軸で継続証明する。数値はすべて日付つきの測定スナップショット。</p>
+
+    <div class="kv" style="margin-top:var(--s5)">
+      <div class="item"><div class="n">62.5%</div><div class="l">公開セット部分込み検出率<br>（Opus 4.8 · 2026-07-05 · 5/8）</div></div>
+      <div class="item"><div class="n">0%</div><div class="l">効果ログ誤修正率<br>（confirmed 1 / refuted 0）</div></div>
+      <div class="item"><div class="n">4</div><div class="l">pre-commit ゲート決定的発火<br>（阻止 0 · 2 リポジトリ）</div></div>
+    </div>
+
+    <div class="stand" style="margin-top:var(--s5)">
+      <div class="scol proven">
+        <h3><span class="tk">Track A</span>recall 定量証明</h3>
+        <p class="muted" style="font-size:13px;margin:0 0 var(--s3)">既知バグの正解リストにブラインドレビューを流し、4 区分（検出/部分/見逃し/追加）で採点。<b>物差しの会社ケースは 2026-07-02 に凍結</b>、以後の継続は公開ケース PF-* のみで測る。</p>
+        <div style="overflow-x:auto">
+          <table class="rtable">
+            <thead><tr><th>計測（日付）</th><th>セット</th><th class="num">検出</th><th class="num">部分込み</th></tr></thead>
+            <tbody>
+              <tr><td>Fable 5 · 2026-06-13</td><td>会社12＋PF-1（13）</td><td class="num">61.5%</td><td class="num">76.9%</td></tr>
+              <tr><td>Opus 4.8 · 2026-07-04</td><td>会社12＋PF-1（13）</td><td class="num">53.8%</td><td class="num">76.9%</td></tr>
+              <tr><td>Opus 4.8 公開 · 2026-07-05</td><td>公開 PF（8）</td><td class="num">37.5%</td><td class="num">62.5%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted" style="font-size:12.5px;margin-top:var(--s3)">弱モデル bracket（Haiku 4.5）: 会社走は Opus 完全検出 3→1/3 で脱落、公開走は 3/3 保持だが各 1/2 agent の辛勝（他方は脆弱性を Good 評価する偽陰性）。設定・ビルドは公開で PF-8（standalone 突合）を Critical 検出＝歴史的 0/3 から部分改善、一方 diff 外前提・実行時ミスマッチは強でも未発火。母数が異なるため検出率の絶対値は直接比較不可。</p>
+      </div>
+
+      <div class="scol trackb">
+        <h3><span class="tk">Track B</span>効果ログ累積 · 2026-07</h3>
+        <p class="muted" style="font-size:13px;margin:0 0 var(--s3)">pre-commit ゲート（決定的経路）を主計測点に、資産の実行時へ構造化ログを emit。生ログは非コミット、<b>サニタイズ済みの集計値のみ</b>を都度収穫する。</p>
+        <ul class="slist" style="gap:var(--s2)">
+          <li>総レコード <b>5</b> / 収穫リポジトリ <b>2</b> <span>— hook 展開に応じて母数増</span></li>
+          <li>ゲート発火 <b>4</b> / 阻止 <b>0</b> <span>— 全 commit を決定的に記録</span></li>
+          <li>重大度別検出 critical <b>1</b> · warning <b>2</b> · info <b>0</b> <span>— code-review 経路</span></li>
+          <li>誤修正率 <b>0%</b> <span>— confirmed 1 / refuted 0</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="thesis" style="margin-top:var(--s5);max-width:78ch">
+      <p><span class="k">更新方式と限界（正直な注記）</span>このページは<b>手動再デプロイ</b>で、数値は日付つき測定値のスナップショット。CSP により<b>ライブ取得は不可</b>（自己完結・外部フェッチ不可）。物差しの会社ケースは凍結済みで再走不能、継続 recall は公開のみ。核心の「弱モデル＋資産＝Fable 級」はまだ<b>未達</b>（公開・弱モデルは片肺の辛勝）で、較正床（易ケース）の補充と唯一の難ケース PF-2 の完全検出が残課題。</p>
+    </div>
+
+    <div class="phases">
+      <div class="phase"><div class="pn">Phase 1 · Fable 依存</div><h4>資産の生成</h4><div class="bar"><i style="width:100%"></i></div><div class="pc">5 / 5 完了 · 物差し・skill 推敲・収穫・メモリ初期化</div></div>
+      <div class="phase"><div class="pn">Phase 2 · 体制</div><h4>配管の完成</h4><div class="bar"><i style="width:100%"></i></div><div class="pc">4 / 4 完了 · 役割分担・ゲート汎用化・4 repo 展開・安全策</div></div>
+      <div class="phase"><div class="pn">Phase 3 · 実戦</div><h4>投入と計測</h4><div class="bar"><i style="width:100%"></i></div><div class="pc">4 / 4 完了 · loop 計測・smoke・定期運転・運用 docs</div></div>
+      <div class="phase active"><div class="pn">Phase 4 · 継続証明</div><h4>効果エビデンス</h4><div class="bar"><i style="width:100%"></i></div><div class="pc">6 / 6 完了 · recall 初期＋公開継続・効果ログ基盤/収穫・本ページ反映</div></div>
+    </div>
+  </section>
+
+  <footer>
+    <div>iskwyuki-claude-plugins · 品質資産イニシアチブ 2026-06〜07 · recall は docs/quality-baseline/results/、効果ログは docs/effect-log/ の集計値から反映（2026-07-05 スナップショット）</div>
+    <div style="margin-top:8px;color:var(--faint)">手動再デプロイ · 日付つき測定値 · CSP でライブ取得不可 · 配信元 github.com/iskwyuki/iskwyuki-claude-plugins · 依存 Chachamaru127/claude-code-harness</div>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---- Theme ----
+  var root = document.documentElement, btn = document.getElementById('themeBtn'),
+      icon = document.getElementById('themeIcon'), label = document.getElementById('themeLabel');
+  function sysDark(){ return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; }
+  function cur(){ return root.getAttribute('data-theme') || (sysDark() ? 'dark' : 'light'); }
+  function apply(t){ root.setAttribute('data-theme', t); icon.textContent = t==='dark' ? '☾' : '☀'; label.textContent = t; }
+  apply(cur());
+  btn.addEventListener('click', function(){ apply(cur()==='dark' ? 'light' : 'dark'); });
+
+  // ---- Data ----
+  var assets = {
+    'skills（配布・14）': [
+      ['/code-review','マルチエージェント並列レビュー＋反証検証パス。lite/standard/full'],
+      ['/pr-review-loop','PR に対する自律レビュー→修正→再レビュー（最大 2 周・ローカル完結・マージはしない）'],
+      ['/commit','コミットメッセージ生成＋コミット実行'],
+      ['/pr','Pull Request 作成（テンプレート付き）'],
+      ['/issue','GitHub Issue の作成・更新・クローズ'],
+      ['/todo','オープン中の GitHub Issue をカテゴリ・概要付きで一覧'],
+      ['/test','テスト実行＋結果解析'],
+      ['/harvest-lessons','git 履歴・レビュー指摘から再発パターンを抽出→検証→rules 化（サニタイズ必須）'],
+      ['/grill-me','計画・設計を共通理解に達するまで追及インタビュー'],
+      ['/prototype','使い捨てプロトタイプで設計を詰める'],
+      ['/zoom-out','俯瞰・上位視点への引き上げ'],
+      ['/find-skills','skill の発見・導入補助（外部選別ミラー）'],
+      ['/pull-assets','配信元 asset をプロジェクトへ取り込む'],
+      ['/push-asset','プロジェクトの asset を配信元へ還元する']
+    ],
+    'native skills（2）': [
+      ['/bootstrap','初回セットアップ。assets 展開＋settings 宣言＋品質ゲート雛形生成。plugin ネイティブ'],
+      ['/update-plugins','インストール済みプラグインの更新確認・適用・巻き戻し。SessionStart 通知から誘導']
+    ],
+    'agents（4）': [
+      ['codebase-analyst','変更前に既存実装の構造・依存・影響範囲を把握する'],
+      ['planner','調査結果やコードを踏まえ実装方針を決定する'],
+      ['researcher','ライブラリ比較など外部技術情報を調査する'],
+      ['reviewer','「レビューして」等の自然言語レビュー要求の受け皿（設計・アーキ観点）']
+    ],
+    'hooks（1）': [
+      ['check-plugin-updates.sh','SessionStart でプラグイン更新を確認・通知。失敗時は /update-plugins へ誘導、失敗キャッシュは 1h で失効']
+    ]
+  };
+
+  var gov = [
+    ['docs/operations.md','運用方針のハブ','モデル運用（effort・role-scoped backend で Reviewer は Opus 固定）＋レビュー＋マージ方針を集約'],
+    ['docs/role-division.md','harness と自前資産の役割分担','計画・実行規律は harness、明示レビューは自前 /code-review。統合は常に PR ブランチ経由'],
+    ['docs/breezing-safety.md','並列 Worker の worktree 衝突対策','session 単位で共有される worktree の混入を、Lead が cherry-pick 前に comm -23 で機械検証'],
+    ['docs/pr-review-loop-metrics.md','自動マージ昇格判断','full 実走 3 件・誤修正率 0%。だが docs 偏重ゆえ手動マージ維持と結論'],
+    ['docs/quality-baseline/','品質の物差し','既知バグの正解リストにレビューを流し、モデル・資産変更時の検出率を比較する（会社ケース凍結後は公開 PF-* で継続）'],
+    ['docs/effect-log/','効果ログ（Track B）','資産実行時の決定的 emit をサニタイズ集計。実作業での実捕捉を継続証明']
+  ];
+
+  // ---- Render asset tabs ----
+  var tabsEl = document.getElementById('assetTabs'), panelsEl = document.getElementById('assetPanels');
+  var keys = Object.keys(assets);
+  keys.forEach(function(k, i){
+    var t = document.createElement('button');
+    t.className = 'tab'; t.setAttribute('role','tab'); t.type='button';
+    t.setAttribute('aria-selected', i===0 ? 'true':'false');
+    t.innerHTML = k.replace(/（.*/,'') + ' <span class="ct">'+ (k.match(/（(.*?)）/)? k.match(/（(.*?)）/)[1] : '') +'</span>';
+    t.addEventListener('click', function(){ selectTab(i); });
+    tabsEl.appendChild(t);
+
+    var panel = document.createElement('div');
+    panel.className = 'apanel'; panel.setAttribute('role','tabpanel'); if(i!==0) panel.hidden = true;
+    var grid = document.createElement('div'); grid.className = 'asset-grid';
+    assets[k].forEach(function(a){
+      var c = document.createElement('div'); c.className = 'acard';
+      var nm = a[0].charAt(0)==='/' ? '<span class="slash">/</span>'+a[0].slice(1) : a[0];
+      c.innerHTML = '<div class="an">'+nm+'</div><p>'+a[1]+'</p>';
+      grid.appendChild(c);
+    });
+    panel.appendChild(grid); panelsEl.appendChild(panel);
+  });
+  function selectTab(idx){
+    var tabs = tabsEl.querySelectorAll('.tab'), panels = panelsEl.querySelectorAll('.apanel');
+    tabs.forEach(function(t,i){ t.setAttribute('aria-selected', i===idx?'true':'false'); });
+    panels.forEach(function(p,i){ p.hidden = i!==idx; });
+  }
+
+  // ---- Render governance ----
+  var gg = document.getElementById('govGrid');
+  gov.forEach(function(g){
+    var el = document.createElement('div'); el.className = 'gcard';
+    el.innerHTML = '<div class="gf">'+g[0]+'</div><h4>'+g[1]+'</h4><p>'+g[2]+'</p>';
+    gg.appendChild(el);
+  });
+})();
+</script>
