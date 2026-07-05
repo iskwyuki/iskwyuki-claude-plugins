@@ -1,6 +1,10 @@
 #!/bin/bash
-# SessionStart hook: インストール済みプラグインの更新有無をチェックして通知する。
-# 「実施・TTLスキップ・失敗・検知」のすべてで systemMessage を 1 行以上出す（無音にしない）。
+# SessionStart hook: セッションを開いたリポジトリ（cwd に対応する install）のプラグイン更新有無を
+# チェックして通知する。
+# 判定は cwd に一致する install の version で行い、全スコープ横断の最大版は使わない
+# （最大版採用だと、1 つでも最新の repo があると遅れている repo でも「最新」と誤報するため）。
+# キャッシュも cwd 単位に分け、ある repo の結果が別 repo のセッションに混ざらないようにする。
+# 「実施・TTLスキップ・失敗・検知・未インストール」のすべてで systemMessage を 1 行以上出す（無音にしない）。
 # 無音は「更新がない」のか「チェックが失敗している」のか区別できないため。
 # 失敗のみの結果はキャッシュ 1 時間で失効させ、次回セッション開始時に自動で再チェックする
 # （一時的なネットワーク失敗が TTL いっぱい再掲され続けるのを防ぐ）。
@@ -21,9 +25,32 @@ emit() {
   python3 -c 'import json,sys; print(json.dumps({"systemMessage": sys.argv[1]}, ensure_ascii=False))' "$1"
 }
 
+# セッションを開いたリポジトリ（cwd）を解決する。
+# 優先順: hook 入力 JSON の cwd → $CLAUDE_PROJECT_DIR → $PWD。realpath で正規化し symlink 差異を吸収する。
+CWD=$(INPUT="$INPUT" python3 - <<'PY'
+import json, os
+raw = os.environ.get("INPUT", "")
+cwd = ""
+if raw.strip():
+    try:
+        cwd = (json.loads(raw) or {}).get("cwd", "") or ""
+    except Exception:
+        cwd = ""
+if not cwd:
+    cwd = os.environ.get("CLAUDE_PROJECT_DIR", "") or os.environ.get("PWD", "")
+print(os.path.realpath(cwd) if cwd else "")
+PY
+)
+
 CACHE_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.claude/plugins/data/iskwyuki-claude-plugins}"
 mkdir -p "$CACHE_DIR" 2>/dev/null || { emit "⚠ プラグイン更新チェック: キャッシュディレクトリを作成できないためスキップ"; exit 0; }
-CACHE_FILE="$CACHE_DIR/update-check.json"
+# キャッシュは cwd 単位に分ける（cwd が解決できない場合のみ従来同様の共通キャッシュへフォールバック）。
+if [ -n "$CWD" ]; then
+  CACHE_KEY=$(printf '%s' "$CWD" | python3 -c 'import hashlib,sys; print(hashlib.sha1(sys.stdin.buffer.read()).hexdigest()[:12])')
+  CACHE_FILE="$CACHE_DIR/update-check-$CACHE_KEY.json"
+else
+  CACHE_FILE="$CACHE_DIR/update-check.json"
+fi
 TTL_HOURS="${PLUGIN_UPDATE_CHECK_TTL_HOURS:-12}"
 
 # TTL 内なら前回結果を 1 行で再掲して終了
@@ -61,7 +88,7 @@ if ! claude plugin marketplace update >/dev/null 2>&1; then
   MP_ERR="marketplace 定義の更新に失敗（比較対象が古い可能性）"
 fi
 
-MP_ERR="$MP_ERR" CACHE_FILE="$CACHE_FILE" python3 <<'PY'
+MP_ERR="$MP_ERR" CACHE_FILE="$CACHE_FILE" CWD="$CWD" python3 <<'PY'
 import base64
 import json
 import os
@@ -72,9 +99,33 @@ import time
 home = os.path.expanduser("~")
 plugins_root = os.path.join(home, ".claude", "plugins")
 cache_file = os.environ["CACHE_FILE"]
+cwd = os.environ.get("CWD", "")
 errors = []
 if os.environ.get("MP_ERR"):
     errors.append(os.environ["MP_ERR"])
+
+def pick_version(installs, cwd):
+    """cwd（セッションを開いたリポジトリ）に対応する install の version を返す。
+    project スコープで projectPath が cwd に一致（完全一致 or 最長前方一致）するものを最優先し、
+    無ければ projectPath を持たない install（user スコープ等の全 repo 共通）にフォールバックする。
+    どちらも無ければ None（この repo にはこのプラグインが未インストール）。
+    全スコープ横断の最大版（旧実装の sorted(...)[-1]）は使わない。"""
+    best = None          # (match_len, version)
+    user_fallback = None
+    for i in installs:
+        ver = i.get("version") or ""
+        pp = i.get("projectPath")
+        if pp:
+            rp = os.path.realpath(pp)
+            # パス要素境界での前方一致（/dev/foo が /dev/foobar に誤マッチしないように）
+            if cwd and (cwd == rp or cwd.startswith(rp.rstrip(os.sep) + os.sep)):
+                if best is None or len(rp) > best[0]:
+                    best = (len(rp), ver)
+        elif user_fallback is None:
+            user_fallback = ver
+    if best is not None:
+        return best[1]
+    return user_fallback
 
 def finish(updates, checked):
     try:
@@ -92,6 +143,9 @@ def finish(updates, checked):
         ctx = ("インストール済み Claude Code プラグインに更新があります: "
                + "; ".join(f"{u['plugin']} {u['installed']}→{u['latest']}" for u in updates)
                + "。ユーザーが更新を望んだ場合は update-plugins skill の手順に従うこと。")
+    elif checked == 0 and not errors:
+        # cwd に一致する install が無いプラグインのみ（この repo にはチェック対象が無い）
+        parts.append("ℹ プラグイン更新チェック: このリポジトリに管理対象プラグインの install 記録がありません（チェック対象なし）")
     else:
         parts.append(f"✓ プラグイン更新チェック完了: {checked} プラグインすべて最新")
     if errors:
@@ -114,7 +168,10 @@ for key, installs in installed.items():
     if not installs:
         continue
     name, _, mp = key.partition("@")
-    current = sorted({i.get("version", "") for i in installs})[-1]
+    current = pick_version(installs, cwd)
+    if current is None:
+        # この cwd（リポジトリ）にこのプラグインの install 記録がない → チェック対象外（催促しない）
+        continue
     mp_dir = os.path.join(plugins_root, "marketplaces", mp)
     try:
         mp_def = json.load(open(os.path.join(mp_dir, ".claude-plugin", "marketplace.json")))
