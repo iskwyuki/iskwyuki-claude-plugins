@@ -20,7 +20,7 @@ claude -p "月次品質ルーチンを実行してください（読み取り専
 
 1. 差分収穫（個人リポジトリのみ）: ~/dev/tech-blog と ~/dev/Antenna の git log を前回レポート（${REPORT_DIR}/ の最新ファイルの日付、無ければ 2026-07-02）以降に絞って確認し、assets/skills/harvest-lessons/SKILL.md の基準（再発・予防可能・ノイズ分類と裏取り）で新しいパターン候補を抽出する。候補があれば rules 追記の draft 文面をレポートに含める（対象リポジトリへの書き込みはしない）
 2. 基準レビューセット比較の要否判定: docs/quality-baseline/results/ の最新の公開結果（ファイル名に public を含む results）の「モデル×資産バージョン」と現在の環境（claude --version と .claude-plugin/plugin.json の version）を比較し、変化していれば『要再実行』、同一なら『不要』と判定する
-3. 公開ケース baseline の再走（要再実行のときのみ・会社禁止のまま公開 PF-* のみ対象）: docs/quality-baseline/PROTOCOL.md の baseline-protocol v1 に厳密に従い、docs/quality-baseline/cases/PF-*.md の各導入コミット diff を『個人公開リポの git show <導入SHA>（読み取り専用・PF-2/5/6/8 は該当ファイルにスコープ）』で取得し、ケースごとに blind な X（code-reviewer＋design-checker 観点）/Y（silent-failure-hunter 観点）subagent を独立起動して 4 区分採点（検出/部分検出/見逃し/追加指摘）する。会社ケース CO-* および非公開リポジトリには一切アクセスしない。**採点結果は results/ に直接コミットせず、${REPORT_DIR}/${STAMP}-public-baseline-draft.md に下書きとして保存**し、サニタイズ（会社固有名 0 件・SHA 断片 0 件）を機械 grep で確認して draft に明記する
+3. 公開ケース baseline の再走（要再実行のときのみ・会社禁止のまま公開 PF-* のみ対象）: docs/quality-baseline/PROTOCOL.md の baseline-protocol v1 に厳密に従い、docs/quality-baseline/cases/PF-*.md の各ケースファイルに記載された取得コマンド（PF-1/2 は git -C ~/dev/portfolio show、PF-3〜8 は git -C ~/dev/Antenna show の形。読み取り専用・PF-2/5/6/8 は該当ファイルにスコープ）で各導入コミット diff を取得し、ケースごとに blind な X（code-reviewer＋design-checker 観点）/Y（silent-failure-hunter 観点）subagent を独立起動して 4 区分採点（検出/部分検出/見逃し/追加指摘）する。会社ケース CO-* および非公開リポジトリには一切アクセスしない。**採点結果は results/ に直接コミットせず、${REPORT_DIR}/${STAMP}-public-baseline-draft.md に下書きとして保存**し、サニタイズ（会社固有名 0 件・SHA 断片 0 件）を機械 grep で確認して draft に明記する
 4. 結果を ${REPORT_DIR}/${STAMP}.md に保存する（新規発見 0 件・再走不要でもその旨を記録。要再実行なら draft のパスと集計サマリを含める）
 
 レポート末尾に『次のアクション』（ユーザーが判断すべきこと）を 3 行以内でまとめること。" \
