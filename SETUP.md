@@ -83,10 +83,10 @@ bootstrap はプロジェクトの `.claude/settings.json` に以下のキーを
 ### 配信元の変更をプロジェクトに取り込む
 
 ```
-/plugin marketplace update
-/pull-assets
-git add .claude/ && git commit -m "chore: iskwyuki-claude-plugins 同期"
+/iskwyuki-claude-plugins:update-plugins
 ```
+
+marketplace update → plugin update → asset 同期 → commit 案内までワンステップで実行します（従来の `/plugin marketplace update` → `/pull-assets` → commit の手動 3 step は不要。同期だけを単体で行いたい場合は従来どおり `/pull-assets`）。
 
 ### プロジェクトで作った asset を配信元に昇格する
 

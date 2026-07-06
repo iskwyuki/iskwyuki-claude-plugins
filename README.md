@@ -68,7 +68,7 @@ bootstrap 完了後、プロジェクトの `.claude/` 配下に `pull-assets` /
 
 ## 運用フロー
 
-- **配信元の更新をプロジェクトに取り込む**: `/plugin marketplace update` → `/pull-assets` → commit
-- **プロジェクトで作った asset を他リポジトリにも展開**: `/push-asset skills <name>` → 配信元で commit & push → 他リポジトリで `/pull-assets`
+- **配信元の更新をプロジェクトに取り込む**: `/iskwyuki-claude-plugins:update-plugins`（marketplace update → plugin update → asset 同期 → commit 案内をワンステップ実行）
+- **プロジェクトで作った asset を他リポジトリにも展開**: `/push-asset skills <name>` → 配信元で commit & push → 他リポジトリで `/iskwyuki-claude-plugins:update-plugins`
 
 詳細は [SETUP.md](./SETUP.md) を参照。
