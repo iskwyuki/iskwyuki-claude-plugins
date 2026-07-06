@@ -91,9 +91,9 @@ rsync -av "$PLUGIN_ROOT/assets/<type>/" ./.claude/<type>/
 
 ### Step 7: ランタイムパスの `.gitignore` 登録
 
-harness が生成する**ランタイム／エフェメラルなパス**（テレメトリ・セッション・worktree・ローカル設定）は git 追跡対象外前提で emit される。消費側 repo の `.gitignore` に冪等登録し、`git add`（特に `-A`）でランタイム状態が公開混入する事故（2026-06-14 の混入事故と同型）を予防する。
+harness や配信 skill が生成する**ランタイム／エフェメラルなパス**（テレメトリ・セッション・worktree・ローカル設定・通行証マーカー）は git 追跡対象外前提で emit される。消費側 repo の `.gitignore` に冪等登録し、`git add`（特に `-A`）でランタイム状態が公開混入する事故（2026-06-14 の混入事故と同型）を予防する。
 
-#### 対象パス（harness ランタイム／エフェメラルのみ）
+#### 対象パス（harness・配信 skill のランタイム／エフェメラルのみ）
 
 以下の固定リストのみを対象とする。**追跡対象の asset（配信された `.claude/skills/` `.claude/agents/` 等、`.githooks/`、コミット意図のある `.claude/agent-memory/`）は絶対に含めない。**
 
