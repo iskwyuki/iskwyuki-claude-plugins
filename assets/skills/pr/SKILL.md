@@ -40,10 +40,14 @@ trigger: "PR を作成するとき（メイン/サブエージェント問わず
 4. **実行後（成否問わず）** `rm -f .claude/pr-skill-active`（通行証を片付ける）
 
 ```bash
-touch .claude/pr-skill-active
-gh pr create --title "..." --body "..."   # or --body-file
-rm -f .claude/pr-skill-active
+touch .claude/pr-skill-active             # ← ①別の Bash 呼び出しで先に実行
+gh pr create --title "..." --body-file …  # ← ②その後に実行
+rm -f .claude/pr-skill-active             # ← ③片付け
 ```
+
+⚠ 運用上の注意（実運用で確認済みの落とし穴）:
+- **hook は PreToolUse（実行前）評価**のため、`touch` と PR 作成を同一コマンドに `&&` で並べても間に合わずブロックされる。**必ず別々の Bash 呼び出し**にする
+- コマンド文字列やコミットメッセージに「gh pr create」という語句が含まれるだけでも hook が反応する（偽陽性）。コミットメッセージは `git commit -F <file>`、本文は `--body-file` でファイル渡しにする
 
 マーカーは 60 分で自動失効するため、`rm` を取りこぼしても常時許可には陥らない。マーカーは `.gitignore` 済み（コミットしない）。
 
