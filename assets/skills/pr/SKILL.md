@@ -1,16 +1,17 @@
 ---
-description: Pull Requestの作成（テンプレート付き）
-trigger: "when the user asks to create a pull request"
-disable-model-invocation: true
+description: Pull Requestの作成（テンプレート付き。PR作成はメイン/サブエージェント問わずこのskill経由が必須。検問hookを配線したリポジトリではgh pr createの直叩きをブロックする）
+trigger: "PR を作成するとき（メイン/サブエージェント問わず必須）"
 ---
 
 # PR 作成スキル
 
 ## 原則
 
+- **PR作成はこの skill 経由が必須**（メイン/サブ問わず）。サブエージェントに実装を委譲する場合も、委譲プロンプトに『PR作成は pr skill を起動して行う』を明記するか、PR作成ステップをメイン側で行う。検問 hook（keiba の `scripts/hook_pr_gate.py` 等）を配線したリポジトリでは、直叩きの `gh pr create` は拒否される
 - PR 本文はレビュアーと未来の自分のための一次資料。**何をしたかだけでなく「削った/残した・選んだ/捨てた判断の理由」を本文に残す**
 - タイトルは 70 文字以内。ベースブランチが適切か（main 直か、開発ブランチか）を確認する
 - 未コミットの変更があれば先にコミットするか確認する。生成した本文はユーザーに提示してから作成する
+- 自律実行（ユーザーが対話にいない委譲・バッチ）では『本文をユーザーに提示してから作成』は事後報告に代えてよい。**テンプレ本文・`pr-review-loop` の起動は省略不可**
 - **PR 作成後は `pr-review-loop` skill を自動起動**し、レビュー → 検証 → 修正 → 再レビューを回す（ユーザーが「レビュー不要」と明示した場合のみスキップ）。ループ収束後もマージは手動
 
 ## テンプレート
@@ -28,6 +29,23 @@ disable-model-invocation: true
 ## テスト
 - [ ] {テスト項目}
 ```
+
+## 手順（通行証プロトコル）
+
+検問 hook を配線したリポジトリでは、この skill が立てる通行証マーカーだけが `gh pr create` を通す。hook が無いリポジトリでも同じ手順で作成する（マーカーは無害な一時ファイル）:
+
+1. 本文・ベースブランチを確定し、未コミット変更があれば先にコミットする
+2. **PR 作成の直前に** `touch .claude/pr-skill-active`（通行証マーカーを立てる）
+3. `gh pr create ...`（テンプレ本文で作成）
+4. **実行後（成否問わず）** `rm -f .claude/pr-skill-active`（通行証を片付ける）
+
+```bash
+touch .claude/pr-skill-active
+gh pr create --title "..." --body "..."   # or --body-file
+rm -f .claude/pr-skill-active
+```
+
+マーカーは 60 分で自動失効するため、`rm` を取りこぼしても常時許可には陥らない。マーカーは `.gitignore` 済み（コミットしない）。
 
 ## チェックリスト
 
