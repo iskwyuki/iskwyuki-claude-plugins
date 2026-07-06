@@ -4,6 +4,9 @@
 .claude/memory/
 out/
 
+# pr skill の通行証マーカー（誤コミットすると mtime 更新で検問が常時許可に退行する）
+.claude/pr-skill-active
+
 # harness の並列 Worker 用ランタイム worktree（docs/breezing-safety.md 参照）
 .harness-worktrees/
 .claude/worktrees/
