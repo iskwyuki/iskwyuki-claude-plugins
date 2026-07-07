@@ -70,6 +70,22 @@ payload "git add -A; git commit -m x" | sh "$GATE"; RC=$?
 payload "git add  -A && git commit -m x" | sh "$GATE"; RC=$?
 [ "$RC" -eq 2 ] || fail "J: git add  -A (double space) should be blocked, got $RC"
 
+# K) git add ..（親ディレクトリ全 add）→ ブロック(exit 2)（レビュー R1 回帰）
+payload "git add .. && git commit -m x" | sh "$GATE"; RC=$?
+[ "$RC" -eq 2 ] || fail "K: git add .. should be blocked, got $RC"
+
+# L) サブシェル (git add -A) → ブロック(exit 2)（レビュー R2 回帰: 境界 ) ）
+payload "(git add -A) && git commit -m x" | sh "$GATE"; RC=$?
+[ "$RC" -eq 2 ] || fail "L: (git add -A) should be blocked, got $RC"
+
+# M) 無空白リダイレクト git add -A>log → ブロック(exit 2)（レビュー R2 回帰: 境界 > ）
+payload "git add -A>log && git commit -m x" | sh "$GATE"; RC=$?
+[ "$RC" -eq 2 ] || fail "M: git add -A>log should be blocked, got $RC"
+
+# N) 親ディレクトリの明示パス add → 許可(exit 0)（.. 対応の偽陽性防止）
+payload "git add ../other/file.txt && git commit -m x" | sh "$GATE"; RC=$?
+[ "$RC" -eq 0 ] || fail "N: explicit parent path (../other/file.txt) should be allowed, got $RC"
+
 cd /
 rm -rf "$TMP"
 if [ "$FAIL" -eq 0 ]; then echo "test-pre-commit-gate: ALL PASS"; else echo "test-pre-commit-gate: FAILED"; fi

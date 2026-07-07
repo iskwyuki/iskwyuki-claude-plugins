@@ -23,9 +23,10 @@ esac
 BLOCKED=false
 REASON="none"
 
-# 1) git add -A / . / ./ / --all の検出（CLAUDE.md「git add は明示パスのみ」）
+# 1) git add -A / . / ./ / .. / --all の検出（CLAUDE.md「git add は明示パスのみ」）
 # トークン境界を要求し、.claude/ や .gitignore 等の先頭ドット明示パスを誤マッチしない（Issue #29）
-if printf '%s\n' "$CMD" | grep -qE 'git add[[:space:]]+(-A|--all|-all|\.(/)?)([[:space:]]|;|&|\||$)'; then
+# 境界には ; & | ) > も含む（サブシェル・リダイレクト連結の取りこぼし防止）
+if printf '%s\n' "$CMD" | grep -qE 'git add[[:space:]]+(-A|--all|-all|\.\.?/?)([[:space:];&|)>]|$)'; then
   BLOCKED=true; REASON="git-add-all"
 fi
 
