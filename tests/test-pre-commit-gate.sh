@@ -46,6 +46,30 @@ payload "ls -la" | sh "$GATE"; RC=$?
 AFTER=$(wc -l < "$OUT" | tr -d ' ')
 [ "$BEFORE" = "$AFTER" ] || fail "D: non-commit should not be logged"
 
+# E) 先頭ドットの明示パス add（.claude/ 配下）→ 許可(exit 0)（Issue #29 誤検知回帰）
+payload "git add .claude/skills/pr/SKILL.md && git commit -m x" | sh "$GATE"; RC=$?
+[ "$RC" -eq 0 ] || fail "E: explicit dot-path (.claude/) should be allowed, got $RC"
+
+# F) 先頭ドットの明示パス add（.gitignore）→ 許可(exit 0)（Issue #29 誤検知回帰）
+payload "git add .gitignore && git commit -m x" | sh "$GATE"; RC=$?
+[ "$RC" -eq 0 ] || fail "F: explicit dot-path (.gitignore) should be allowed, got $RC"
+
+# G) git add . の連結 → ブロック(exit 2)
+payload "git add . && git commit -m x" | sh "$GATE"; RC=$?
+[ "$RC" -eq 2 ] || fail "G: git add . should be blocked, got $RC"
+
+# H) git add ./ （git add . と等価）→ ブロック(exit 2)
+payload "git add ./ && git commit -m x" | sh "$GATE"; RC=$?
+[ "$RC" -eq 2 ] || fail "H: git add ./ should be blocked, got $RC"
+
+# I) セミコロン連結 git add -A; → ブロック(exit 2)
+payload "git add -A; git commit -m x" | sh "$GATE"; RC=$?
+[ "$RC" -eq 2 ] || fail "I: git add -A; should be blocked, got $RC"
+
+# J) 連続空白 git add  -A → ブロック(exit 2)（現行 case 一致の取りこぼし回帰）
+payload "git add  -A && git commit -m x" | sh "$GATE"; RC=$?
+[ "$RC" -eq 2 ] || fail "J: git add  -A (double space) should be blocked, got $RC"
+
 cd /
 rm -rf "$TMP"
 if [ "$FAIL" -eq 0 ]; then echo "test-pre-commit-gate: ALL PASS"; else echo "test-pre-commit-gate: FAILED"; fi

@@ -23,10 +23,11 @@ esac
 BLOCKED=false
 REASON="none"
 
-# 1) git add -A / . / --all の検出（CLAUDE.md「git add は明示パスのみ」）
-case "$CMD" in
-  *"git add -A"*|*"git add ."*|*"git add --all"*|*"git add -all"*) BLOCKED=true; REASON="git-add-all";;
-esac
+# 1) git add -A / . / ./ / --all の検出（CLAUDE.md「git add は明示パスのみ」）
+# トークン境界を要求し、.claude/ や .gitignore 等の先頭ドット明示パスを誤マッチしない（Issue #29）
+if printf '%s\n' "$CMD" | grep -qE 'git add[[:space:]]+(-A|--all|-all|\.(/)?)([[:space:]]|;|&|\||$)'; then
+  BLOCKED=true; REASON="git-add-all"
+fi
 
 # 2) staged 差分の汎用機密パターン（会社固有名はハードコードしない）
 STAGED=$(git diff --cached 2>/dev/null || true)
