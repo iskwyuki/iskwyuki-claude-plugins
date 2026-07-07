@@ -38,4 +38,5 @@ jobs:
             `.github/workflows/sync-upstream-skills.yml` による自動同期 PR です。
             上流（[mattpocock/skills](https://github.com/mattpocock/skills) / [vercel-labs/skills](https://github.com/vercel-labs/skills)）の変更を `.github/upstream-skills.manifest` の対象に反映しました。
 
-            （`plugin.json` の version bump を含めて）マージ後、各プロジェクトで `/iskwyuki-claude-plugins:update-plugins` を実行すると反映されます。
+            この PR には `plugin.json` の version bump は含まれません。マージ前に bump commit を本 PR に追加してください（配信 asset 変更のため必須）。
+            マージ後、各プロジェクトで `/iskwyuki-claude-plugins:update-plugins` を実行すると反映されます。
