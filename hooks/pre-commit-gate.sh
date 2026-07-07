@@ -23,10 +23,14 @@ esac
 BLOCKED=false
 REASON="none"
 
-# 1) git add -A / . / ./ / .. / --all の検出（CLAUDE.md「git add は明示パスのみ」）
+# 1) git add -A / --all / ドット・スラッシュのみのパス（. ./ .. ../.. 等）の検出
+#    （CLAUDE.md「git add は明示パスのみ」）
 # トークン境界を要求し、.claude/ や .gitignore 等の先頭ドット明示パスを誤マッチしない（Issue #29）
-# 境界には ; & | ) > も含む（サブシェル・リダイレクト連結の取りこぼし防止）
-if printf '%s\n' "$CMD" | grep -qE 'git add[[:space:]]+(-A|--all|-all|\.\.?/?)([[:space:];&|)>]|$)'; then
+# - -[[:alnum:]]*A[[:alnum:]]* : 結合ショートフラグ（-Av / -vA）も捕捉
+# - [./]+ : ドットとスラッシュだけで構成されるトークン（. ./ .. ../.. .// 等）を一括捕捉
+# - 境界には ; & | ) > と引用符・バッククォートも含む（サブシェル・リダイレクト・quoted 形の取りこぼし防止）
+GIT_ADD_ALL_RE="git add[[:space:]]+(-[[:alnum:]]*A[[:alnum:]]*|--all|-all|[./]+)([[:space:];&|)>\"'\`]|\$)"
+if printf '%s\n' "$CMD" | grep -qE "$GIT_ADD_ALL_RE"; then
   BLOCKED=true; REASON="git-add-all"
 fi
 

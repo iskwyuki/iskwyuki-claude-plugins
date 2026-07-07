@@ -86,6 +86,30 @@ payload "git add -A>log && git commit -m x" | sh "$GATE"; RC=$?
 payload "git add ../other/file.txt && git commit -m x" | sh "$GATE"; RC=$?
 [ "$RC" -eq 0 ] || fail "N: explicit parent path (../other/file.txt) should be allowed, got $RC"
 
+# O) 結合ショートフラグ git add -Av → ブロック(exit 2)（レビュー R4 回帰）
+payload "git add -Av && git commit -m x" | sh "$GATE"; RC=$?
+[ "$RC" -eq 2 ] || fail "O: git add -Av (combined flag) should be blocked, got $RC"
+
+# P) バッククォート内 git add -A → ブロック(exit 2)（レビュー R5 回帰: 境界 \` ）
+payload '`git add -A` && git commit -m x' | sh "$GATE"; RC=$?
+[ "$RC" -eq 2 ] || fail "P: backtick-wrapped git add -A should be blocked, got $RC"
+
+# Q) 二重引用符内 sh -c "git add -A" → ブロック(exit 2)（レビュー R5 回帰: 境界 " ）
+payload 'sh -c \"git add -A\" && git commit -m x' | sh "$GATE"; RC=$?
+[ "$RC" -eq 2 ] || fail "Q: double-quoted git add -A should be blocked, got $RC"
+
+# R) 単一引用符内 bash -c 'git add -A' → ブロック(exit 2)（レビュー R5 回帰: 境界 ' ）
+payload "bash -c 'git add -A' && git commit -m x" | sh "$GATE"; RC=$?
+[ "$RC" -eq 2 ] || fail "R: single-quoted git add -A should be blocked, got $RC"
+
+# S) 多段ドットパス git add ../.. → ブロック(exit 2)（レビュー R6 回帰）
+payload "git add ../.. && git commit -m x" | sh "$GATE"; RC=$?
+[ "$RC" -eq 2 ] || fail "S: git add ../.. should be blocked, got $RC"
+
+# T) ./ 始まりの明示パス add → 許可(exit 0)（[./]+ 対応の偽陽性防止）
+payload "git add ./src/main.c && git commit -m x" | sh "$GATE"; RC=$?
+[ "$RC" -eq 0 ] || fail "T: explicit relative path (./src/main.c) should be allowed, got $RC"
+
 cd /
 rm -rf "$TMP"
 if [ "$FAIL" -eq 0 ]; then echo "test-pre-commit-gate: ALL PASS"; else echo "test-pre-commit-gate: FAILED"; fi
