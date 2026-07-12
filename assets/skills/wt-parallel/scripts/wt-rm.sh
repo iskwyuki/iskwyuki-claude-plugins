@@ -1,10 +1,12 @@
 #!/bin/sh
-# wt-rm: worktree 破棄（plugin 対称解除 → git worktree remove）（Task 6.1 ＋ 6.4 の対称解除を先取り）
+# wt-rm: worktree 破棄（stop → pre_rm → plugin 対称解除 → git worktree remove）（§6・Task 6.1/6.4）
 #
 # usage: wt-rm.sh <worktree_dir>
-#   - .dev/plugins に記録された project スコープ plugin を対称に uninstall（ダングリング防止）。
+#   - 起動プロセスがあれば wt-down で停止してから破棄する（§6 の [stop]）。
+#   - pre_rm フックを注入済み env（WT_SLUG/WT_OFFSET + env マップ）のもと実行。失敗は
+#     警告どまりで破棄続行（§6: pre_rm は app 責務・汎用版は呼ぶだけ）。
+#   - .dev/plugins に記録された project スコープ plugin を対称に uninstall（ダングリング防止・§8）。
 #   - メイン worktree・未登録パスは拒否（§9 安全不変条件）。
-#   - Stage 1 では pre_rm フックは未実装（Task 6.4 で追加）。
 set -u
 DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 . "$DIR/wt-identity.sh"
@@ -24,6 +26,34 @@ if ! printf '%s\n' "$LIST" | awk '/^worktree /{sub(/^worktree /,""); print}' | g
 fi
 # メイン worktree の破棄は拒否
 [ "$WT_ABS" != "$MAIN_WT" ] || wt_die "メイン worktree は破棄できません: $WT_ABS"
+
+# ── 起動プロセスを停止してから破棄（§6 の [stop]・wt-up 済みなら .dev/pid を止める）──
+if [ -f "$DIR/wt-down.sh" ]; then
+  sh "$DIR/wt-down.sh" "$WT_ABS" >/dev/null || wt_warn "停止処理で警告（破棄は続行）"
+fi
+
+# ── pre_rm フック（破棄直前・失敗は警告どまりで破棄続行・§6）──
+MANIFEST="$WT_ABS/.wt-parallel.yaml"
+if [ -f "$MANIFEST" ]; then
+  if wt_manifest_validate "$MANIFEST" 2>/dev/null; then
+    PRE_RM=$(wt_yaml_map_value "$MANIFEST" hooks pre_rm)
+    if [ -n "$PRE_RM" ]; then
+      # フックへ env コンテキストを注入（WT_SLUG/WT_OFFSET + env マップ・§7 と同一値）。
+      # 破棄時は offset を採番し直さず、永続化済みの値をそのまま読む。
+      WT_SLUG=$(wt_read_slug "$WT_ABS/.dev"); export WT_SLUG
+      [ -n "$WT_SLUG" ] || wt_warn "WT_SLUG が空です（.dev/slug 不在）。pre_rm を WT_SLUG 未設定で実行します（\${WT_SLUG} 依存の破壊コマンドに注意）"
+      WT_OFFSET=$(wt_read_offset "$WT_ABS/.dev"); [ -n "$WT_OFFSET" ] || WT_OFFSET=0; export WT_OFFSET
+      for k in $(wt_yaml_map_keys "$MANIFEST" env); do
+        ev=$(wt_expand_value "$(wt_yaml_map_value "$MANIFEST" env "$k")")
+        export "$k=$ev"
+      done
+      wt_info "hook pre_rm: $PRE_RM"
+      ( cd "$WT_ABS" && sh -c "$PRE_RM" ) || wt_warn "pre_rm フックが失敗しました（警告どまり・破棄続行）"
+    fi
+  else
+    wt_warn "manifest が strict-subset 外のため pre_rm をスキップ（破棄は続行）"
+  fi
+fi
 
 # ── plugin 対称解除（.dev/plugins に記録された分だけ）──────────
 if [ -f "$WT_ABS/.dev/plugins" ]; then
