@@ -101,7 +101,7 @@ printf '%s\n' "$WT_DIR"   # ★ stdout は worktree パスのみ
 wt_info "作成完了: $WT_DIR  (slug=$SLUG, base=$BASE_REF)"
 wt_info "次: cd \"$WT_DIR\""
 if [ -f "$MANIFEST" ]; then
-  wt_info "起動: wt-up（Stage 2・未実装）"
+  wt_info "起動: sh \"$DIR/wt-up.sh\" \"$WT_DIR\"  （停止: sh \"$DIR/wt-down.sh\" \"$WT_DIR\"）"
 else
   wt_info "マニフェスト（.wt-parallel.yaml）が無いため起動系は対象外（作成＋引き継ぎ＋plugin 登録のみ）"
 fi

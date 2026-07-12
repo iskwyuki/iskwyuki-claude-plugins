@@ -2,6 +2,9 @@
 .claude/state/
 .claude/sessions/
 .claude/memory/
+# 任意階層のランタイム状態（フックが CWD 相対で書くため。ネスト混入の二重防御）
+**/.claude/state/
+**/.claude/sessions/
 out/
 
 # pr skill の通行証マーカー（誤コミットすると mtime 更新で検問が常時許可に退行する）
