@@ -69,3 +69,33 @@
 | Task | 内容 | DoD | Depends | Status |
 |------|------|-----|---------|--------|
 | 5.1 | pre-commit-gate の git-add-all 誤検知修正（Issue #29）。case 部分一致を grep -E のトークン境界判定に置換: `git add[[:space:]]+(-A|--all|-all|\.(/)?)([[:space:]]|;|&|\||$)`。Issue 記載案に対し 2 点補強 — (a) `git add ./`（`git add .` と等価）の抜けを `\.(/)?` でカバー、(b) 連続空白 `git add  -A` を `[[:space:]]+` でカバー。回帰テストを tests/test-pre-commit-gate.sh に追加（許可: `.claude/` 配下・`.gitignore` の明示パス add ／ ブロック: `git add .`・`git add ./`・`git add -A;` 連結・従来ケース B 維持）。配信 asset 変更につき plugin.json 0.14.0 → 0.14.1 [tdd:required] | 回帰テスト（誤検知 2 ケースが先に fail することを確認後に修正）を含む全テスト PASS、plugin.json bump 済み、PR マージで Issue #29 close。consumer 反映は update-plugins 経由である旨を Issue クローズコメントに明記 | - | cc:完了 [ae977d5]（TDD Red 証跡→20 ケース ALL PASS。レビューループ 2 周で旧実装比の後退 6 系統〔`..`・境界 `)>`・結合フラグ・引用符/バッククォート・多段ドットパス・テスト〕を追加回収、全指摘を実コマンド 3 者比較で confirmed 検証。0.14.1、PR #30 マージ・Issue #29 close・update-plugins 明記済み） |
+
+## Phase 6: worktree 並列開発ツールの汎用化配信
+
+**背景（2026-07-09・grill 進行中）**: 業務で使う worktree 並列起動キット（他リポジトリから抽出した約 1,200 行・ローカル参照）を**設計参考**に、git worktree による複数 issue 並列開発の土台を汎用化し配信 asset 化する。kit は共有 Postgres・実データ複製 DB・process-compose 起動が app スタック（uv/pnpm）固有だが、**worktree ライフサイクル（作成・設定/plugin 引き継ぎ・破棄・ポート採番）は汎用化可能**。app 固有部分はマニフェスト（`.wt-parallel.yaml`）＋フックに externalize する。
+
+**確定した設計方針（grill Q1–Q10、2026-07-09）**:
+- **Q1 導入形態**: 配信 asset として汎用化（このリポジトリ自身は起動対象 app を持たないため、価値の主軸は他 app プロジェクトへの pull 配布）
+- **Q2 由来の扱い**: kit は設計仕様書としてのみ参照しゼロから再実装。**kit 固有識別子・由来リポジトリ名は docs / コミット / コメントに一切残さない**（このリポジトリの機密分離ルール）
+- **Q3 externalize 方式**: 宣言的マニフェスト（`.wt-parallel.yaml`）1 本に集約。DB seed 等の動的処理はマニフェスト内のフックコマンド文字列として持たせる（別ファイル群にしない）
+- **Q4 スコープ**: 起動オーケストレーションまで担う（`wt-up` 相当）。ただし **DB 複製は pre-start フックに委任**（Postgres 密結合の安全ガードは汎用化すると危険なため）。孤児 DB 掃除（kit 側の専用スクリプト）相当は汎用版に持たない
+- **Q5 配置**: skill 同梱（`assets/skills/<name>/scripts/*.sh`）。pull-assets の既存機構で `.claude/skills/<name>/scripts/` に配布。リポジトリ直下は汚さず既存 `scripts/` と衝突しない。実行は skill 経由（絶対パス案内）
+- **Q6 skill 構成**: 2 skill。作成入口（手動発火・`disable-model-invocation`・**AskUserQuestion 不使用でテキスト番号付き確認**）と、ライフサイクル正本（モデル自動参照可）
+- **Q7 plugin 登録**: kit の enabledPlugins → project スコープ install ロジックを標準機能として再実装（app 非依存・Claude Code 状態のみ依存・非 CC/jq 不在で自動スキップ）。環境変数（例 `WT_SKIP_PLUGIN_REGISTER=1`）でオプトアウト可
+- **Q8 表現力**: 最小コア。マニフェストは実質「単一 start コマンド + health URL」。汎用スクリプトは start をバックグラウンド実行 → ログを `.dev/logs/` へ → health を 200 までポーリング → 緑で return。**マルチプロセス/依存順序は start コマンドの責務**（process-compose を必須にしない）
+- **Q9 フォールバック**: マニフェスト任意・起動 opt-in。マニフェスト無しなら `wt-new` は作成＋引き継ぎ＋plugin 登録のみ実行し起動系は案内して正常終了（**このリポジトリ自身で dogfood 可能**）
+- **Q10 命名**: `wt-parallel` 系。作成入口 `/wt-new`、正本 `wt-parallel`、マニフェスト `.wt-parallel.yaml`
+
+**設計確定（grill Q11–Q19、2026-07-09）＋設計仕様書**: 詳細は [docs/wt-parallel-design.md](docs/wt-parallel-design.md)（設計正本）。Q11 コマンド体系 `wt-new`/`wt-up`/`wt-down`/`wt-rm`＋`wt-identity`、Q12 health は url/command 両対応（既定 60s）、Q13 フック 4 種（post-create/pre-start/post-start/pre-rm）、Q14 ポートは offset のみ採番・意味づけは app、Q15 env マップで start/health.url/フックへ共通注入、Q16 引き継ぎは settings.local.json＋.env デフォルト＋`inherit:` 追加、Q17 起点は env>マニフェスト>origin/HEAD>現在ブランチ、Q18 純粋関数単体＋統合スモーク、Q19 skill 集約＋docs 1 ページ。dogfooding は配信元 symlink（`.claude/skills -> ../assets/skills`）でカバー済み [[source-repo-symlink-not-plugin]]。
+
+**実装前 or 実装中に確定する残論点**（設計書§12）: ~~マニフェスト YAML パーサ（`yq` 依存 vs 自前）~~ **確定（2026-07-09）: 最小自前パース（strict subset・`yq` 非依存）。対応部分集合は設計書 §5.1**／~~`.dev/` の gitignore 自動追記の方式~~ **確定（2026-07-09・6.1 実装時）: `wt-new` が git-native exclude（`.git/info/exclude`）へ冪等追記（tracked な `.gitignore` を汚さない）**／health url の `${...}` 安全展開の実装詳細（6.3・起動系で確定）。
+
+**暫定タスク分割（3 ステージ・段階リリース。各ステージ完了時に配信 asset 変更につき plugin.json bump）**:
+
+| Task | 内容 | DoD | Depends | Status |
+|------|------|-----|---------|--------|
+| 6.1 | **[Stage 1: 土台]** `wt-new` / `wt-rm` / `wt-identity`（slug 採番・`.dev/` 永続化）＋設定引き継ぎ（`.env` / `.claude/settings.local.json`）＋plugin 登録引き継ぎ＋作成入口 skill `/wt-new`（テキスト確認・AskUserQuestion 不使用）。マニフェスト無しで動作（起動系は opt-in 案内）。このリポジトリ自身で dogfood [tdd:required] | マニフェスト無しのリポジトリで worktree 作成→設定/plugin 引き継ぎ→破棄が一巡し、`git worktree add` 直叩きを使わずに済む。回帰テストで plugin 登録の非 CC スキップを確認。plugin.json bump | - | cc:完了（TDD Red→Green。純粋関数 test-wt-identity＋統合スモーク test-wt-lifecycle 全 PASS、自リポジトリで wt-new→wt-rm 往復を dogfood 実走。plugin 対称解除＋`WT_SKIP_PLUGIN_REGISTER` オプトアウトを 6.4 から先取り〔破棄一巡の clean 化のため〕。`.dev/` は git-native exclude 冪等追記。0.15.0）|
+| 6.2 | **[Stage 1]** マニフェストスキーマ（`.wt-parallel.yaml`）確定。start コマンド・health URL・ポート採番の基底/注入 env 変数名・引き継ぎファイル・フック種別を最小セットで設計し `.wt-parallel.yaml.example` とスキーマ注記を用意 [tdd:skip:docs-only] | スキーマ例とフィールド仕様が docs 化され、6.3 の実装が参照できる。最小マニフェスト（start + health のみ 10 行以内）で起動できる設計であることを明記 | - | cc:完了（`.wt-parallel.yaml.example`〔S1/S2 凡例・10 行以内の最小例つき〕＋設計書 §5.1 strict-subset 文法＋wt-parallel SKILL.md にフィールド仕様。yq 非依存パースを明記）|
+| 6.3 | **[Stage 2: 起動]** `wt-up`（start バックグラウンド起動→`.dev/logs/` ログ集約→health ポーリング→緑で return）／`wt-down`＋ポート自動採番（基底+offset の空きポート探索・`.dev/` 永続化）＋pre-start/post-start フック実行＋正本 skill `wt-parallel` [tdd:required] | マニフェストを持つサンプル（単一プロセス）で `wt-up`→health 緑待ち→URL/ログパス提示→`wt-down` が通る。ポート衝突が自動回避される。plugin.json bump | 6.2 | cc:TODO |
+| 6.4 | **[Stage 2]** `wt-rm` の plugin 登録対称解除（`claude plugin uninstall --scope project`）＋環境変数オプトアウト（`WT_SKIP_PLUGIN_REGISTER`）＋安全不変条件のガイド（ソース DB を drop しない等は pre-start フックの書き方 doc として提供） [tdd:required] | `wt-rm` 後に `installed_plugins.json` にダングリングが残らないことを確認。オプトアウト時に plugin 登録がスキップされる回帰テスト。plugin.json bump | 6.1 | cc:TODO |
+| 6.5 | **[Stage 3: 実証・横展開]** 実 app プロジェクト 1 つ（Antenna 等・起動対象あり）に `.wt-parallel.yaml` を置き起動込みで実走。docs 整備（`docs/wt-parallel.md`）・利用者向け README への導線追加・pull-assets 配布確認 [tdd:skip:docs-only] | 実 app プロジェクトで worktree 作成→起動→health 緑→停止→破棄が一巡した記録がある。docs マージ・CLAUDE.md/README から参照 | 6.3 | cc:TODO |
