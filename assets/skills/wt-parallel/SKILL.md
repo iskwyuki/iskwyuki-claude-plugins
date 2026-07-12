@@ -20,7 +20,7 @@ trigger: "when working with git worktree parallel development, the .wt-parallel.
 |-----------|------|------|
 | `wt-identity.sh` | 共通ライブラリ（slug 正規化・`.dev/` 永続化・strict-subset パーサ〔scalar/list/2階層マップ/flow list〕・マニフェスト検証・空きポート offset 採番・env 式展開サンドボックス・plugin 可用性判定）。source して使う | S1+S2 |
 | `wt-new.sh` | worktree 作成 → 引き継ぎ（`.env`/`settings.local.json`/`inherit`）→ plugin 登録 → 次手順表示 | S1 |
-| `wt-rm.sh` | 破棄。plugin 対称解除 → `git worktree remove` | S1 |
+| `wt-rm.sh` | 破棄。stop（wt-down）→ `pre_rm` フック → plugin 対称解除 → `git worktree remove` | S1+S2 |
 | `wt-up.sh` | 起動。offset 採番 → env 展開 → pre_start → start を BG 起動 → ログ集約 → health 待ち → post_start → URL/ログパス提示 | S2 |
 | `wt-down.sh` | 停止のみ（worktree・外部リソース・offset/slug は残す）| S2 |
 
@@ -88,8 +88,26 @@ backtick は loud-error で拒否**。算術は算術コンテキスト `$(( ))`
 - **worktree 作成は必ず `wt-new`、片付けは必ず `wt-rm`**（`git worktree add`/`remove` 直叩き禁止）。
 - **メイン worktree・未登録パスは破棄しない**（`wt-rm` が拒否する）。
 - 共有外部リソース（DB コンテナ等）は worktree 操作で止めない/消さない。
-- `.dev/`（slug / plugins / 将来の offset・logs）は git-native exclude（`.git/info/exclude`）に
+- `.dev/`（slug / plugins / offset / logs / pid）は git-native exclude（`.git/info/exclude`）に
   自動追記され全 worktree で無視される。tracked な `.gitignore` は汚さない。
+
+## フックの書き方（安全ガイド）
+
+汎用側はフックを「宣言されたタイミングで worktree ルートで `sh -c` 実行する」だけで、**中身の安全性は
+各 app のフックが担保する**（§9・§13）。破壊的操作（特に `pre_rm` の DB drop）は次を守る:
+
+- **必ず `${WT_SLUG}` で自 worktree 固有のリソースだけに限定する**。共有/ソース DB を消さない。
+  - ✅ `pre_rm: "dropdb app_${WT_SLUG}"`（この worktree 用に作った複製だけを落とす）
+  - ❌ `pre_rm: "dropdb app_production"` / `dropdb app`（共有・ソースを落とす → 復旧不能）
+- **`pre_start` の DB seed も複製先（`${WT_SLUG}` 付き）に対して行い、ソースを直接いじらない**。
+  ソース DB からの複製は `pre_start` / `post_create` の中で app が責任を持って行う（汎用側は関知しない）。
+- `pre_rm` の失敗は**警告どまりで破棄は続行**する（`wt-rm` が中断しない）。半端な外部リソースが
+  残り得るので、フックは冪等（`dropdb --if-exists` 等）に書く。
+- フックには `WT_SLUG` / `WT_OFFSET` と `env` マップの展開値が同一値で注入される（起動・停止で一貫）。
+  破壊的コマンドはこれらの注入変数だけを使い、ハードコードした共有リソース名を書かない。
+
+> `WT_SKIP_PLUGIN_REGISTER=1` で plugin 登録引き継ぎをオプトアウトできる（`wt-new` の install も
+> `wt-rm` の uninstall も一括でスキップ。CI や plugin を使わない worktree 向け）。
 
 ## テスト
 
@@ -98,3 +116,5 @@ backtick は loud-error で拒否**。算術は算術コンテキスト `$(( ))`
 - `tests/test-wt-lifecycle.sh`（統合スモーク: 作成→引き継ぎ→plugin スキップ→破棄）
 - `tests/test-wt-startup.sh`（統合スモーク: wt-new→wt-up→health 緑→wt-down→wt-rm。
   command-health は常時実行、URL health＋実ポート衝突回避は python3+curl があれば実行）
+- `tests/test-wt-teardown.sh`（統合スモーク: wt-rm の pre_rm 実行＋WT_SLUG 注入・破棄前の停止・
+  plugin 対称解除〔stub claude でダングリング無しを決定的に検証〕・pre_rm 失敗でも破棄続行）
