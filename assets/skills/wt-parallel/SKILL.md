@@ -19,7 +19,7 @@ trigger: "when working with git worktree parallel development, the .wt-parallel.
 | スクリプト | 役割 | 段階 |
 |-----------|------|------|
 | `wt-identity.sh` | 共通ライブラリ（slug 正規化・`.dev/` 永続化・strict-subset パーサ〔scalar/list/2階層マップ/flow list〕・マニフェスト検証・空きポート offset 採番・env 式展開サンドボックス・plugin 可用性判定）。source して使う | S1+S2 |
-| `wt-new.sh` | worktree 作成 → 引き継ぎ（`.env`/`settings.local.json`/`inherit`）→ plugin 登録 → 次手順表示 | S1 |
+| `wt-new.sh` | worktree 作成 → 引き継ぎ（`.env`/`settings.local.json`/`inherit`）→ plugin 登録 → `post_create` フック → 次手順表示 | S1+S2 |
 | `wt-rm.sh` | 破棄。stop（wt-down）→ `pre_rm` フック → plugin 対称解除 → `git worktree remove` | S1+S2 |
 | `wt-up.sh` | 起動。offset 採番 → env 展開 → pre_start → start を BG 起動 → ログ集約 → health 待ち → post_start → URL/ログパス提示 | S2 |
 | `wt-down.sh` | 停止のみ（worktree・外部リソース・offset/slug は残す）| S2 |

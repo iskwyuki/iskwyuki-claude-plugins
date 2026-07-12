@@ -75,6 +75,45 @@ case "$RELOUT" in /*) ;; *) fail "rel: stdout が絶対パスでない ($RELOUT)
 [ -f "$RELOUT/.dev/slug" ] || fail "rel: .dev/slug が worktree 内に無い（基準ズレ）"
 (cd "$SRC" && sh "$RM" "$RELOUT" >/dev/null 2>&1) || fail "rel: wt-rm 失敗"
 
+# ── post_create フック（作成＋引き継ぎ直後・WT_SLUG 注入・§6・Task 6.6）──
+PCS="$TMP/pc/src"; mkdir -p "$PCS"
+(
+  cd "$PCS"
+  git init -q -b main 2>/dev/null || { git init -q; git checkout -q -b main; }
+  git config user.email t@t; git config user.name t
+  printf 'hooks:\n  post_create: "echo created-${WT_SLUG} > .dev/pc.marker"\n' > .wt-parallel.yaml
+  echo hi > R.md; git add R.md .wt-parallel.yaml; git commit -q -m init
+)
+WPC=$(cd "$PCS" && sh "$NEW" feature/pc 2>/dev/null); RC=$?
+[ "$RC" -eq 0 ] || fail "post_create: wt-new exit 0 期待 got $RC"
+if [ -d "$WPC" ]; then
+  PSLUG=$(cat "$WPC/.dev/slug" 2>/dev/null)
+  if [ -f "$WPC/.dev/pc.marker" ]; then
+    grep -qxF "created-$PSLUG" "$WPC/.dev/pc.marker" 2>/dev/null \
+      || fail "post_create: WT_SLUG が注入されていない（want created-$PSLUG got $(cat "$WPC/.dev/pc.marker" 2>/dev/null))"
+  else
+    fail "post_create: フックが作成直後に実行されていない"
+  fi
+  (cd "$PCS" && sh "$RM" "$WPC" >/dev/null 2>&1) || true
+else
+  fail "post_create: worktree 未作成"
+fi
+
+# ── post_create 失敗で wt-new が中断（非ゼロ終了・§6）──
+PFS="$TMP/pf/src"; mkdir -p "$PFS"
+(
+  cd "$PFS"
+  git init -q -b main 2>/dev/null || { git init -q; git checkout -q -b main; }
+  git config user.email t@t; git config user.name t
+  printf 'hooks:\n  post_create: "exit 5"\n' > .wt-parallel.yaml
+  echo hi > R.md; git add R.md .wt-parallel.yaml; git commit -q -m init
+)
+WPF=$(cd "$PFS" && sh "$NEW" feature/pf 2>/dev/null); RC=$?
+[ "$RC" -ne 0 ] || fail "post_create: 失敗フックで wt-new は中断すべき（got exit 0）"
+# 中断後に残る worktree を片付け（stdout パスは wt_die で出ないため既定命名で解決）
+LEFT="$TMP/pf/src--feature-pf"
+[ -d "$LEFT" ] && (cd "$PFS" && sh "$RM" "$LEFT" >/dev/null 2>&1) || true
+
 cd /; rm -rf "$TMP"
 if [ "$FAIL" -eq 0 ]; then echo "test-wt-lifecycle: ALL PASS"; else echo "test-wt-lifecycle: FAILED"; fi
 exit "$FAIL"

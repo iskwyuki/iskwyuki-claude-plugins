@@ -96,6 +96,25 @@ else
   wt_info "plugin 登録をスキップ（claude / jq が見つかりません）"
 fi
 
+# ── post_create フック（作成＋引き継ぎ直後・失敗で中断・§6）─────
+# worktree は gitignore された node_modules 等を持たないため、依存初期化（pnpm install 等）を
+# ここで実行する。宣言時のみ実行し、失敗したら wt_die で中断する（半端な worktree は wt-rm で片付け）。
+if [ -f "$MANIFEST" ]; then
+  POST_CREATE=$(wt_yaml_map_value "$MANIFEST" hooks post_create)
+  if [ -n "$POST_CREATE" ]; then
+    wt_manifest_validate "$MANIFEST" || wt_die "manifest が strict-subset 外です。post_create を実行できません: $WT_DIR（片付け: sh \"$DIR/wt-rm.sh\" \"$WT_DIR\"）"
+    # フックへ env コンテキストを注入。offset は作成時点では未採番（wt-up の責務）なので 0 既定。
+    WT_SLUG=$SLUG; export WT_SLUG
+    WT_OFFSET=$(wt_read_offset "$WT_DIR/.dev"); [ -n "$WT_OFFSET" ] || WT_OFFSET=0; export WT_OFFSET
+    for k in $(wt_yaml_map_keys "$MANIFEST" env); do
+      ev=$(wt_expand_value "$(wt_yaml_map_value "$MANIFEST" env "$k")")
+      export "$k=$ev"
+    done
+    wt_info "hook post_create: $POST_CREATE"
+    ( cd "$WT_DIR" && sh -c "$POST_CREATE" ) >&2 || wt_die "post_create フックが失敗しました（作成中断）: $WT_DIR（片付け: sh \"$DIR/wt-rm.sh\" \"$WT_DIR\"）"
+  fi
+fi
+
 # ── 次手順 ───────────────────────────────────
 printf '%s\n' "$WT_DIR"   # ★ stdout は worktree パスのみ
 wt_info "作成完了: $WT_DIR  (slug=$SLUG, base=$BASE_REF)"
