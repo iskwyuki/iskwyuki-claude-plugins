@@ -59,6 +59,7 @@ bootstrap 完了後、プロジェクトの `.claude/` 配下に `pull-assets` /
 │   ├── skills/
 │   │   ├── pull-assets/     # /pull-assets (配信元 → プロジェクト)
 │   │   ├── push-asset/      # /push-asset (プロジェクト → 配信元)
+│   │   ├── wt-parallel/     # git worktree 並列開発（作成/起動/停止/破棄・docs/wt-parallel.md）
 │   │   ├── commit/ pr/ issue/ test/ todo/ code-review/
 │   └── agents/
 │       └── codebase-analyst.md planner.md researcher.md reviewer.md
@@ -70,5 +71,6 @@ bootstrap 完了後、プロジェクトの `.claude/` 配下に `pull-assets` /
 
 - **配信元の更新をプロジェクトに取り込む**: `/iskwyuki-claude-plugins:update-plugins`（marketplace update → plugin update → asset 同期 → commit 案内をワンステップ実行）
 - **プロジェクトで作った asset を他リポジトリにも展開**: `/push-asset skills <name>` → 配信元で commit & push → 他リポジトリで `/iskwyuki-claude-plugins:update-plugins`
+- **git worktree で複数 Issue を並列開発・起動する**: `wt-parallel`（作成/起動/停止/破棄・ポート自動採番・`.wt-parallel.yaml`）。導入は [docs/wt-parallel.md](./docs/wt-parallel.md)
 
 詳細は [SETUP.md](./SETUP.md) を参照。
